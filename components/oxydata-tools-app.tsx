@@ -1,20 +1,54 @@
 "use client";
 
+import { JdClarityTab } from "@/components/job-clarity/JdClarityTab";
+import { RecruiterCopilotTab } from "@/components/recruiter-copilot/RecruiterCopilotTab";
+import { OutputPanel } from "@/components/hiring-strategy/OutputPanel";
+import { GemIcon } from "@/components/GemIcon";
+import { OpalLoginWordmark } from "@/components/OpalLoginWordmark";
+import {
+  NavIconAiScoring,
+  NavIconAirtable,
+  NavIconAlerts,
+  NavIconAnalytics,
+  NavIconCvFormatter,
+  NavIconHiringStrategy,
+  NavIconJobClarity,
+  NavIconJobPosting,
+  NavIconRecruiterCopilot,
+  NavIconRubric,
+  NavIconSettings,
+  NavIconUpload,
+  NavIconViewScoring,
+  SidebarGemIcon
+} from "@/components/sidebar-gem-icon";
+import JobRubric from "@/components/job-rubric/JobRubric";
+import { useWorkspaceTheme, WorkspaceThemeToggle } from "@/components/workspace-theme";
+import { BookOpen, Upload } from "lucide-react";
 import { Orbitron } from "next/font/google";
-import { useEffect, useId, useMemo, useRef, useState } from "react";
+import type { CSSProperties } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
-const opalDisplay = Orbitron({
+const orbitronWordmark = Orbitron({
   subsets: ["latin"],
-  weight: ["700", "800", "900"]
+  weight: ["800"]
 });
 
-type TabKey = "jd" | "rubric" | "uploadCv" | "aiScoring" | "viewScoring" | "viewAirtable" | "cv" | "jobPosting" | "setup";
+type TabKey =
+  | "jd"
+  | "rubric"
+  | "uploadCv"
+  | "aiScoring"
+  | "recruiterCopilot"
+  | "hiringStrategy"
+  | "viewScoring"
+  | "viewAirtable"
+  | "cv"
+  | "jobPosting"
+  | "jobRubric"
+  | "alerts"
+  | "analytics"
+  | "setup";
 type StatusState = "loading" | "success" | "error";
-type CommandKey =
-  | "/full"
-  | "/export"
-  | "/upload"
-  | "/update";
 
 type JobRecord = {
   id: string;
@@ -30,93 +64,64 @@ type StatusMessage = {
 const APP_VERSION = "v1.2";
 const AIRTABLE_EMBED_URL = "https://airtable.com/embed/app285aKVVr7JYL43/shrrAnsUsfhMC5xG1";
 
-const tabs: Array<{ key: TabKey; label: string }> = [
-  { key: "jd", label: "Job Clarity" },
-  { key: "rubric", label: "Rubric Generator" },
-  { key: "uploadCv", label: "Upload to Manatal" },
-  { key: "aiScoring", label: "Run AI Scoring" },
-  { key: "viewScoring", label: "View Scoring" },
-  { key: "viewAirtable", label: "View Airtable" },
-  { key: "cv", label: "CV Formatter" },
-  { key: "jobPosting", label: "Job Posting" },
-  { key: "setup", label: "Setup" }
-];
-
-const commands: Array<{ key: CommandKey; disabled?: boolean }> = [
-  { key: "/full" },
-  { key: "/export" },
-  { key: "/upload" },
-  { key: "/update" }
-];
-
-/** Circular mint-glow mark with mirrored facets (reference Opal logo) */
-function OpalLogoMark({ className }: { className?: string }) {
-  const uid = useId().replace(/:/g, "");
-  const clipId = `opal-logo-clip-${uid}`;
-  const panelId = `opal-logo-panel-${uid}`;
-  const haloId = `opal-logo-halo-${uid}`;
-  const glowId = `opal-logo-glow-${uid}`;
-
-  return (
-    <svg
-      className={className}
-      width="40"
-      height="40"
-      viewBox="0 0 56 56"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      aria-hidden
-    >
-      <defs>
-        <linearGradient id={panelId} x1="8" y1="10" x2="48" y2="46" gradientUnits="userSpaceOnUse">
-          <stop stopColor="#ecfdf5" />
-          <stop offset="0.35" stopColor="#99f6e4" />
-          <stop offset="0.72" stopColor="#5eead4" />
-          <stop offset="1" stopColor="#2dd4bf" />
-        </linearGradient>
-        <radialGradient id={haloId} cx="0.42" cy="0.38" r="0.65" gradientUnits="objectBoundingBox">
-          <stop offset="0%" stopColor="#ccfbf1" stopOpacity="0.75" />
-          <stop offset="0.45" stopColor="#99f6e4" stopOpacity="0.45" />
-          <stop offset="1" stopColor="#14b8a6" stopOpacity="0.12" />
-        </radialGradient>
-        <filter id={glowId} x="-55%" y="-55%" width="210%" height="210%">
-          <feGaussianBlur stdDeviation="2.8" result="b" />
-          <feMerge>
-            <feMergeNode in="b" />
-            <feMergeNode in="SourceGraphic" />
-          </feMerge>
-        </filter>
-        <clipPath id={clipId}>
-          <circle cx="28" cy="28" r="17.8" />
-        </clipPath>
-      </defs>
-      <g filter={`url(#${glowId})`}>
-        <circle cx="28" cy="28" r="20.5" fill={`url(#${haloId})`} opacity="0.9" />
-        <g clipPath={`url(#${clipId})`}>
-          <circle cx="28" cy="28" r="17.8" fill="#042f2e" fillOpacity="0.25" />
-          <path fill={`url(#${panelId})`} fillOpacity="0.92" d="M25.5 13L11.2 18.6v18.8L25.5 43V13z" />
-          <path fill={`url(#${panelId})`} fillOpacity="0.92" d="M30.5 13l14.3 5.6v18.8L30.5 43V13z" />
-        </g>
-        <circle
-          cx="28"
-          cy="28"
-          r="17.8"
-          stroke="#99f6e4"
-          strokeOpacity="0.35"
-          strokeWidth="0.85"
-          fill="none"
-        />
-        <path
-          stroke="#f0fdfa"
-          strokeOpacity="0.4"
-          strokeWidth="0.55"
-          strokeLinecap="round"
-          d="M28 15.5v25"
-        />
-      </g>
-    </svg>
-  );
-}
+const TAB_TOPBAR: Record<TabKey, { title: string; subtitle: string }> = {
+  jd: {
+    title: "Job clarity",
+    subtitle: "Optimize Job Descriptions"
+  },
+  rubric: {
+    title: "Rubric generator",
+    subtitle: "Setup · generate AI scoring rubrics"
+  },
+  jobPosting: {
+    title: "Job posting",
+    subtitle: "Setup · create and publish job posts"
+  },
+  jobRubric: {
+    title: "Job Rubric",
+    subtitle: "View and manage job rubric weights"
+  },
+  uploadCv: {
+    title: "Upload to ATS",
+    subtitle: "Bulk upload CVs to upload to Manatal pipeline"
+  },
+  aiScoring: {
+    title: "Run AI scoring",
+    subtitle: "Generate AI Score and Reasoning on Candidate CVs"
+  },
+  recruiterCopilot: {
+    title: "Interview Copilot",
+    subtitle: "Process · interview probes, blended score, HM assess"
+  },
+  cv: {
+    title: "CV formatter",
+    subtitle: "Format Candidate CV into Oxy standard template"
+  },
+  hiringStrategy: {
+    title: "Hiring Strategy",
+    subtitle: "Setup · plan channels, roles, and sourcing priorities"
+  },
+  viewScoring: {
+    title: "View scoring",
+    subtitle: "Process · browse candidate scores and reports"
+  },
+  viewAirtable: {
+    title: "View Airtable",
+    subtitle: "Process · view live Airtable recruitment data"
+  },
+  alerts: {
+    title: "Alerts",
+    subtitle: "Intelligence · hiring and pipeline notifications"
+  },
+  analytics: {
+    title: "Analytics",
+    subtitle: "Intelligence · dashboards and hiring metrics"
+  },
+  setup: {
+    title: "Settings",
+    subtitle: "Configure integrations and workspace preferences"
+  }
+};
 
 const DEMO_LOGIN_EMAIL = "recruiter@oxydata.my";
 
@@ -136,6 +141,7 @@ function normalizeDemoEmail(raw: string): string {
 
 export function OxydataToolsApp() {
   const [activeTab, setActiveTab] = useState<TabKey>("jd");
+  const { theme: workspaceTheme, persistTheme: persistWorkspaceTheme } = useWorkspaceTheme();
   const [authenticated, setAuthenticated] = useState(false);
   const [loginEmail, setLoginEmail] = useState(DEMO_LOGIN_EMAIL);
   const [loginPassword, setLoginPassword] = useState("******");
@@ -155,17 +161,18 @@ export function OxydataToolsApp() {
     return (
       <main className="login-page">
         <div className="login-page__card">
-          <div className="login-page__block">
-            <div className="login-page__header">
-              <img src="/oxy.webp" alt="Oxydata" className="login-page__oxy-logo" />
-              <div className="login-page__opal-lockup">
-                <OpalLogoMark className="login-page__opal-icon" />
-                <h1 className={`login-page__opal-title ${opalDisplay.className}`}>OPAL</h1>
-              </div>
+          <div className="login-page__hero">
+            <div className="login-gem-wrap">
+              <span className="login-gem-tooltip">Optimised People Acquisition &amp; Lifecycle</span>
+              <GemIcon idPrefix="login" />
             </div>
-            <div className="login-bevel-line" aria-hidden />
-            <p className="login-page__sub">AI Recruiter — sign in</p>
+            <OpalLoginWordmark />
           </div>
+          <div className="login-page__by-oxydata">
+            <img src="/oxydata_logo.webp" alt="Oxydata" className="login-page__oxydata-logo" width={120} height={16} />
+          </div>
+          <div className="login-page__divider" aria-hidden />
+          <p className="login-page__tagline">AI Recruiter — sign in</p>
           <form
             className="login-page__form"
             noValidate
@@ -224,344 +231,217 @@ export function OxydataToolsApp() {
     );
   }
 
-  return (
-    <main className="min-h-screen bg-transparent text-[13px] text-slate-100">
-      <TopBar activeTab={activeTab} onChange={setActiveTab} version={APP_VERSION} onLogoClick={() => setAuthenticated(false)} />
-      <div className="mx-auto flex w-full max-w-[1440px] flex-col px-5 pb-10 pt-7 sm:px-7 lg:px-9">
-        {activeTab === "jd" ? <JdClarityTab /> : null}
-        {activeTab === "rubric" ? <RubricGeneratorTab /> : null}
-        {activeTab === "uploadCv" ? <UploadCvTab /> : null}
-        {activeTab === "aiScoring" ? <AiCandidateScoringTab /> : null}
-        {activeTab === "viewScoring" ? <ViewScoringTab /> : null}
-        {activeTab === "viewAirtable" ? <ViewAirtableTab /> : null}
-        {activeTab === "cv" ? <CvFormatterTab /> : null}
-        {activeTab === "jobPosting" ? <JobPostingTab /> : null}
-        {activeTab === "setup" ? <SetupTab /> : null}
-      </div>
-    </main>
-  );
-}
+  const top = TAB_TOPBAR[activeTab];
 
-function TopBar({
-  activeTab,
-  onChange,
-  version,
-  onLogoClick
-}: {
-  activeTab: TabKey;
-  onChange: (tab: TabKey) => void;
-  version: string;
-  onLogoClick: () => void;
-}) {
   return (
-    <header className="border-b border-white/10 bg-white/[0.04] px-5 py-3 sm:px-7 lg:px-9">
-      <div className="mx-auto flex max-w-[1440px] flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        <div className="flex flex-wrap items-center gap-3">
-          <button type="button" onClick={onLogoClick} className="cursor-pointer hover:opacity-80 transition-opacity">
-              <img src="/oxy.webp" alt="Oxydata" className="h-8 w-auto" />
-            </button>
-          <div className="inline-flex w-fit items-center rounded-[99px] border border-cyan-400/35 bg-cyan-400/15 px-3 py-1 text-[11px] font-semibold text-cyan-400">
-            {version}
-          </div>
-          <div className="hidden h-[18px] w-px bg-white/20 lg:block" />
-          <div className="flex flex-wrap gap-2">
-            {tabs.filter((tab) => tab.key !== "setup").map((tab) => (
-              <button
-                key={tab.key}
-                type="button"
-                data-active={activeTab === tab.key}
-                onClick={() => onChange(tab.key)}
-                className="tab-button rounded-[8px] border border-white/[0.12] bg-white/[0.05] px-4 py-[5px] text-[12px] text-slate-500 transition-all duration-200 ease-in-out"
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
+    <div className="opal-app-shell">
+      <aside className="opal-sidebar" aria-label="Primary navigation">
+        <div className="opal-sidebar-logo">
           <button
             type="button"
-            onClick={() => onChange("setup")}
-            aria-label="Setup"
-            title="Setup"
-            data-active={activeTab === "setup"}
-            className="glass-button grid h-[38px] w-[38px] place-items-center rounded-[12px] border border-white/[0.12] bg-white/[0.05] text-[22px] text-slate-300 transition-all duration-200 ease-in-out data-[active=true]:border-cyan-400/35 data-[active=true]:bg-cyan-400/15 data-[active=true]:text-cyan-300"
+            className="opal-sidebar-logo-btn"
+            onClick={() => setAuthenticated(false)}
+            title="Sign out"
           >
-            <span aria-hidden="true">&#9881;</span>
+            <SidebarGemIcon />
+            <div className="opal-sidebar-logo-text">
+              <span className={`opal-sidebar-wordmark ${orbitronWordmark.className}`}>OPAL</span>
+              <span className="opal-sidebar-version">{APP_VERSION}</span>
+            </div>
           </button>
         </div>
-      </div>
-    </header>
-  );
-}
 
-function JdClarityTab() {
-  const [activeCommand, setActiveCommand] = useState<CommandKey>("/full");
-  const [jdText, setJdText] = useState("");
-  const [output, setOutput] = useState("");
-  const [status, setStatus] = useState<StatusMessage>(null);
-  const [isHelpOpen, setIsHelpOpen] = useState(false);
-  const [dividerX, setDividerX] = useState(50);
-  const dividerRef = useRef<HTMLDivElement>(null);
-
-  const helpRows = [
-    {
-      command: "/help",
-      description: "Shows all available commands with a short description"
-    },
-    {
-      command: "/full",
-      description: "Runs the full JD analysis: Summary -> Clarity Score -> Requirements Table -> Clarifying Questions -> Risks"
-    },
-    {
-      command: "/upload",
-      description: "Uploads filled Excel data and merges corrected or updated table content back into the workflow"
-    },
-    {
-      command: "/update",
-      description: "Re-runs the analysis after you attach corrected or updated table data"
-    },
-    {
-      command: "/export",
-      description: "Exports to Excel with 2 sheets: Internal View and Client View, based on export_spec.md"
-    }
-  ];
-
-  function formatCommandDisplay(key: CommandKey): { emoji: string; label: string; tooltip: string } {
-    const displays: Record<CommandKey, { emoji: string; label: string; tooltip: string }> = {
-      "/full": {
-        emoji: "①",
-        label: "Analyze",
-        tooltip: "Runs the full JD analysis"
-      },
-      "/export": {
-        emoji: "②",
-        label: "Export",
-        tooltip: "Exports to Excel with 2 sheets: Internal View, Client View & Questions"
-      },
-      "/upload": {
-        emoji: "③",
-        label: "Upload",
-        tooltip: "Uploads filled Excel data and merges corrected or updated table"
-      },
-      "/update": {
-        emoji: "④",
-        label: "Update",
-        tooltip: "Re-runs the analysis after you attach corrected or updated table data"
-      }
-    };
-    return displays[key] || { emoji: "", label: key, tooltip: "" };
-  }
-
-  function clearAll() {
-    setJdText("");
-    setOutput("");
-    setStatus(null);
-    setActiveCommand("/full");
-  }
-
-  function handleDividerMouseDown() {
-    const handleMouseMove = (e: MouseEvent) => {
-      if (!dividerRef.current) return;
-      const container = dividerRef.current.parentElement;
-      if (!container) return;
-      const rect = container.getBoundingClientRect();
-      const newX = ((e.clientX - rect.left) / rect.width) * 100;
-      setDividerX(Math.max(20, Math.min(80, newX)));
-    };
-
-    const handleMouseUp = () => {
-      document.removeEventListener("mousemove", handleMouseMove);
-      document.removeEventListener("mouseup", handleMouseUp);
-    };
-
-    document.addEventListener("mousemove", handleMouseMove);
-    document.addEventListener("mouseup", handleMouseUp);
-  }
-
-  async function runAnalysis() {
-    setStatus({ state: "loading", message: "Running JD analysis through the secure app route..." });
-
-    try {
-      const response = await fetch("/api/jd-clarity", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ command: activeCommand, description: jdText })
-      });
-      const data = (await response.json()) as { result?: string; error?: string };
-
-      if (!response.ok) {
-        throw new Error(data.error ?? "Unable to analyze this job description right now.");
-      }
-
-      setOutput(data.result ?? "");
-      setStatus({ state: "success", message: "Analysis complete. Output has been refreshed." });
-    } catch (error) {
-      setStatus({
-        state: "error",
-        message: error instanceof Error ? error.message : "Unexpected JD analysis error."
-      });
-    }
-  }
-
-  return (
-    <section className="grid gap-0" style={{ gridTemplateColumns: `${dividerX}% 18px 1fr` }}>
-      <div className="surface-card p-5">
-        <h2 className="mb-4 text-[15px] font-bold tracking-[0.12em] uppercase text-cyan-300">Job Clarity</h2>
-        <SectionLabel>Job Description *</SectionLabel>
-        <textarea
-          value={jdText}
-          onChange={(event) => setJdText(event.target.value)}
-          placeholder="Paste the full job description here for analysis, clarification, export prep, or client-facing review."
-          required
-          aria-required="true"
-          className="glass-input mt-3 h-[446px] w-full resize-none px-4 py-4"
-        />
-        <div className="mt-2 text-right text-[11px] text-slate-500">{jdText.length.toLocaleString()} chars</div>
-
-        <div className="mt-3 grid grid-cols-4 gap-2">
-          {commands.map((command) => {
-            const active = activeCommand === command.key;
-            const display = formatCommandDisplay(command.key);
-
-            return (
-              <button
-                key={command.key}
-                type="button"
-                data-active={active}
-                disabled={command.disabled}
-                onClick={() => setActiveCommand(command.key)}
-                className="command-button group relative glass-button min-h-11 rounded-[8px] px-4 py-2 text-left text-[12px] font-semibold tracking-[0.02em] text-slate-300"
-              >
-                <span className={active ? "drop-shadow-[0_0_8px_rgba(6,182,212,0.6)] text-cyan-400" : ""}>
-                  {display.emoji && <span className="text-[18px]">{display.emoji}</span>}
-                  {display.emoji && " "}
-                  {display.label}
-                </span>
-                <span className="pointer-events-none absolute -top-11 left-1/2 z-20 hidden w-max max-w-[240px] -translate-x-1/2 rounded-md border border-cyan-400/35 bg-slate-950/95 px-3 py-2 text-center text-[11px] font-medium normal-case leading-4 text-slate-100 shadow-[0_8px_30px_rgba(0,0,0,0.45)] group-hover:block group-focus-visible:block">
-                  {display.tooltip}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-
-        <div className="mt-5 flex flex-col gap-3 sm:flex-row">
-          <button type="button" onClick={runAnalysis} className="primary-button min-h-11 flex-1 rounded-[14px] px-5">
-            Execute
+        <div className="opal-nav-section">
+          <div className="opal-nav-section-label">Setup</div>
+          <button
+            type="button"
+            className={`opal-nav-item ${activeTab === "hiringStrategy" ? "opal-nav-item--active" : ""}`}
+            onClick={() => setActiveTab("hiringStrategy")}
+          >
+            <NavIconHiringStrategy />
+            <span className="opal-nav-label">Hiring Strategy</span>
           </button>
           <button
             type="button"
-            onClick={clearAll}
-            className="glass-button min-h-11 rounded-[14px] px-5"
+            className={`opal-nav-item ${activeTab === "jd" ? "opal-nav-item--active" : ""}`}
+            onClick={() => setActiveTab("jd")}
           >
-            Clear
+            <NavIconJobClarity />
+            <span className="opal-nav-label">Job clarity</span>
+          </button>
+          <button
+            type="button"
+            className={`opal-nav-item ${activeTab === "jobPosting" ? "opal-nav-item--active" : ""}`}
+            onClick={() => setActiveTab("jobPosting")}
+          >
+            <NavIconJobPosting />
+            <span className="opal-nav-label">Job posting</span>
+          </button>
+          <button
+            type="button"
+            className={`opal-nav-item ${activeTab === "jobRubric" ? "opal-nav-item--active" : ""}`}
+            onClick={() => setActiveTab("jobRubric")}
+          >
+            <BookOpen size={18} />
+            <span className="opal-nav-label">Job Rubric</span>
           </button>
         </div>
 
-        {status ? <StatusBox status={status} className="mt-4" /> : null}
-      </div>
+        <div className="opal-nav-divider" aria-hidden />
 
-      <div
-        ref={dividerRef}
-        onMouseDown={handleDividerMouseDown}
-        className="group relative flex h-full w-[18px] cursor-col-resize items-center justify-center bg-black/15 transition-colors hover:bg-black/28"
-      >
-        <div className="h-[94%] w-[4px] rounded-full bg-gradient-to-b from-zinc-500/80 via-zinc-700/90 to-zinc-900 shadow-[inset_1px_1px_0_rgba(255,255,255,0.2),inset_-1px_-1px_0_rgba(0,0,0,0.72),inset_0_1px_0_rgba(255,255,255,0.14),inset_0_-1px_0_rgba(0,0,0,0.78)] group-hover:from-zinc-400/85 group-hover:via-zinc-600/90 group-hover:to-zinc-800" />
-      </div>
-
-      <div className="surface-card flex min-h-[620px] flex-col p-5">
-        <div className="mb-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <span className="h-2.5 w-2.5 rounded-full bg-cyan-400 shadow-[0_0_12px_rgba(6,182,212,0.6)]" />
-            <span className="text-[12px] font-semibold uppercase tracking-[0.12em] text-slate-300">Output</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => {
-                if (!output) return;
-                const blob = new Blob([output], { type: "text/plain" });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement("a");
-                a.href = url;
-                a.download = "jd-clarity.txt";
-                a.click();
-                URL.revokeObjectURL(url);
-              }}
-              className="glass-button group relative rounded-lg px-3 py-1.5 text-xs"
-            >
-              Download
-              <span className="pointer-events-none absolute -top-12 left-1/2 z-20 hidden w-max max-w-[280px] -translate-x-1/2 rounded-md border border-cyan-400/35 bg-slate-950/95 px-3 py-2 text-center text-[11px] font-medium normal-case leading-4 text-slate-100 shadow-[0_8px_30px_rgba(0,0,0,0.45)] group-hover:block group-focus-visible:block">
-                Download as text file
-              </span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setIsHelpOpen(true)}
-              className="glass-button rounded-lg px-3 py-1.5 text-xs"
-            >
-              Help
-            </button>
-          </div>
+        <div className="opal-nav-section">
+          <div className="opal-nav-section-label">Sourcing</div>
+          <button
+            type="button"
+            className={`opal-nav-item ${activeTab === "uploadCv" ? "opal-nav-item--active" : ""}`}
+            onClick={() => setActiveTab("uploadCv")}
+          >
+            <NavIconUpload />
+            <span className="opal-nav-label">Upload to ATS</span>
+          </button>
         </div>
-        <div className="panel-border flex min-h-[574px] flex-1 rounded-[16px] bg-white/[0.02] p-6">
-          {output ? (
-            <pre className="whitespace-pre-wrap font-sans text-[13px] leading-7 text-slate-200">{output}</pre>
-          ) : (
-            <EmptyState
-              title="No analysis yet"
-              subtitle="Pick a slash command and run the JD through the bot to see the result here."
-              icon={<DocumentIcon />}
-            />
-          )}
-        </div>
-      </div>
 
-      {isHelpOpen ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-4xl rounded-[20px] border border-white/15 bg-slate-950/95 p-5 shadow-2xl">
-            <div className="mb-4 flex items-center justify-between gap-4">
-              <div>
-                <h3 className="text-lg font-semibold text-slate-100">Job Clarity Commands</h3>
-                <p className="mt-1 text-sm text-slate-400">Available actions for Job Clarity.</p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setIsHelpOpen(false)}
-                className="glass-button rounded-lg px-3 py-1.5 text-xs"
+        <div className="opal-nav-divider" aria-hidden />
+
+        <div className="opal-nav-section">
+          <div className="opal-nav-section-label">Process</div>
+          <button
+            type="button"
+            className={`opal-nav-item ${activeTab === "aiScoring" ? "opal-nav-item--active" : ""}`}
+            onClick={() => setActiveTab("aiScoring")}
+          >
+            <NavIconAiScoring />
+            <span className="opal-nav-label">Run AI scoring</span>
+          </button>
+          <button
+            type="button"
+            className={`opal-nav-item ${activeTab === "recruiterCopilot" ? "opal-nav-item--active" : ""}`}
+            onClick={() => setActiveTab("recruiterCopilot")}
+          >
+            <NavIconRecruiterCopilot />
+            <span className="opal-nav-label">Interview Copilot</span>
+          </button>
+          <button
+            type="button"
+            className={`opal-nav-item ${activeTab === "viewScoring" ? "opal-nav-item--active" : ""}`}
+            onClick={() => setActiveTab("viewScoring")}
+          >
+            <NavIconViewScoring />
+            <span className="opal-nav-label">View scoring</span>
+          </button>
+          <button
+            type="button"
+            className={`opal-nav-item ${activeTab === "viewAirtable" ? "opal-nav-item--active" : ""}`}
+            onClick={() => setActiveTab("viewAirtable")}
+          >
+            <NavIconAirtable />
+            <span className="opal-nav-label">View Airtable</span>
+          </button>
+          <button
+            type="button"
+            className={`opal-nav-item ${activeTab === "cv" ? "opal-nav-item--active" : ""}`}
+            onClick={() => setActiveTab("cv")}
+          >
+            <NavIconCvFormatter />
+            <span className="opal-nav-label">CV formatter</span>
+          </button>
+        </div>
+
+        <div className="opal-nav-divider" aria-hidden />
+
+        <div className="opal-nav-section">
+          <div className="opal-nav-section-label">Intelligence</div>
+          <button
+            type="button"
+            className={`opal-nav-item ${activeTab === "alerts" ? "opal-nav-item--active" : ""}`}
+            onClick={() => setActiveTab("alerts")}
+          >
+            <NavIconAlerts />
+            <span className="opal-nav-label">Alerts</span>
+          </button>
+          <button
+            type="button"
+            className={`opal-nav-item ${activeTab === "analytics" ? "opal-nav-item--active" : ""}`}
+            onClick={() => setActiveTab("analytics")}
+          >
+            <NavIconAnalytics />
+            <span className="opal-nav-label">Analytics</span>
+          </button>
+        </div>
+
+        <div className="opal-sidebar-footer">
+          <button
+            type="button"
+            className={`opal-nav-item ${activeTab === "rubric" ? "opal-nav-item--active" : ""}`}
+            onClick={() => setActiveTab("rubric")}
+          >
+            <NavIconRubric />
+            <span className="opal-nav-label">Rubric generator</span>
+          </button>
+          <button type="button" className="opal-util-item" onClick={() => setActiveTab("setup")}>
+            <NavIconSettings />
+            <span className="opal-util-label">Settings</span>
+          </button>
+        </div>
+      </aside>
+
+      <div className="opal-main opal-workspace-theme" data-theme={workspaceTheme}>
+        <header className="opal-topbar flex-none">
+          <div className="opal-topbar-text">
+            <h1 className="opal-topbar-title">{top.title}</h1>
+            <div className="opal-topbar-sub-row">
+              <p
+                className={`opal-topbar-sub${activeTab === "jd" || activeTab === "cv" || activeTab === "aiScoring" || activeTab === "uploadCv" ? " italic" : ""}`}
               >
-                Close
-              </button>
-            </div>
-
-            <div className="overflow-x-auto rounded-[16px] border border-white/10 bg-white/[0.03]">
-              <table className="w-full min-w-[720px] text-left text-sm text-slate-200">
-                <thead className="bg-white/[0.04] text-[11px] uppercase tracking-[0.12em] text-slate-400">
-                  <tr>
-                    <th className="px-4 py-3">Command</th>
-                    <th className="px-4 py-3">What it does</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {helpRows.map((row) => (
-                    <tr key={row.command} className="border-t border-white/10 align-top">
-                      <td className="px-4 py-3 font-mono text-cyan-300">{row.command}</td>
-                      <td className="px-4 py-3 text-slate-300">{row.description}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                {top.subtitle}
+              </p>
+              <WorkspaceThemeToggle theme={workspaceTheme} onChange={persistWorkspaceTheme} />
             </div>
           </div>
+        </header>
+        <div className="opal-main-content">
+          {activeTab === "jd" ? (
+            <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+              <JdClarityTab />
+            </div>
+          ) : null}
+          {activeTab === "rubric" ? <RubricGeneratorTab /> : null}
+          {activeTab === "uploadCv" ? (
+            <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+              <UploadCvTab />
+            </div>
+          ) : null}
+          {activeTab === "aiScoring" ? <AiCandidateScoringTab /> : null}
+          {activeTab === "recruiterCopilot" ? <RecruiterCopilotTab /> : null}
+          {activeTab === "hiringStrategy" ? <HiringStrategyTab /> : null}
+          {activeTab === "viewScoring" ? <ViewScoringTab /> : null}
+          {activeTab === "viewAirtable" ? <ViewAirtableTab /> : null}
+          {activeTab === "cv" ? (
+            <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+              <CvFormatterTab />
+            </div>
+          ) : null}
+          {activeTab === "jobPosting" ? <JobPostingTab /> : null}
+          {activeTab === "jobRubric" ? <JobRubric /> : null}
+          {activeTab === "alerts" ? <AlertsTab /> : null}
+          {activeTab === "analytics" ? <AnalyticsTab /> : null}
+          {activeTab === "setup" ? <SetupTab /> : null}
         </div>
-      ) : null}
-    </section>
+      </div>
+    </div>
   );
 }
 
 function UploadCvTab() {
-  const [name, setName] = useState("");
+  type UploadRow = {
+    name: string;
+    jobId: string;
+    jobName: string;
+    clientName: string;
+    source: string;
+    cvFileName: string;
+  };
+
   const [jobId, setJobId] = useState("");
   const [jobName, setJobName] = useState("");
   const [clientName, setClientName] = useState("");
@@ -569,10 +449,92 @@ function UploadCvTab() {
   const [jobSuggestions, setJobSuggestions] = useState<JobRecord[]>([]);
   const [isJobDropdownOpen, setIsJobDropdownOpen] = useState(false);
   const [source, setSource] = useState("");
-  const [cvFile, setCvFile] = useState<File | null>(null);
-  const [rows, setRows] = useState<Array<{ name: string; jobId: string; jobName: string; clientName: string; source: string; cvFileName: string }>>([]);
+  const [bulkCvFiles, setBulkCvFiles] = useState<File[]>([]);
+  const [fileInputKey, setFileInputKey] = useState(0);
+  const [isAddingToQueue, setIsAddingToQueue] = useState(false);
+  const [rows, setRows] = useState<UploadRow[]>([]);
 
-  const canSubmit = name && jobId && jobName && clientName && source && cvFile;
+  const canAddToQueue = Boolean(jobId && jobName && clientName && source && bulkCvFiles.length > 0);
+  const canUploadToManatal = rows.length > 0;
+
+  const inferCandidateNameFromFile = (fileName: string) => {
+    const withoutExt = fileName.replace(/\.[^/.]+$/, "");
+    const normalized = withoutExt
+      .replace(/[_-]+/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+    const cleaned = normalized
+      .replace(/\b(cv|resume|curriculum vitae|profile|updated)\b/gi, "")
+      .replace(/\s+/g, " ")
+      .trim();
+    const fallback = cleaned || normalized || "Unknown Candidate";
+    return fallback
+      .split(" ")
+      .filter(Boolean)
+      .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+      .join(" ");
+  };
+
+  const toTitleCaseName = (rawName: string) =>
+    rawName
+      .replace(/\s+/g, " ")
+      .trim()
+      .split(" ")
+      .filter(Boolean)
+      .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+      .join(" ");
+
+  const extractNameFromParagraph = (paragraph: string) => {
+    const firstSegment = paragraph
+      .replace(/\s+/g, " ")
+      .split(/[|\n,•]/)[0]
+      .trim();
+    const alphaText = firstSegment
+      .replace(/[^a-zA-Z\s'-]/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+    const words = alphaText.split(" ").filter((word) => word.length > 1);
+    if (words.length < 2) return "";
+    return `${words[0]} ${words[1]}`
+      .split(" ")
+      .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+      .join(" ");
+  };
+
+  const extractCandidateNameFromCv = async (file: File) => {
+    try {
+      const formData = new FormData();
+      formData.append("file", file, file.name);
+
+      const response = await fetch("/api/cv-original-preview", {
+        method: "POST",
+        body: formData
+      });
+      if (!response.ok) {
+        return inferCandidateNameFromFile(file.name);
+      }
+
+      const data = (await response.json()) as { previewHtml?: string };
+      const previewHtml = data.previewHtml;
+      if (!previewHtml) {
+        return inferCandidateNameFromFile(file.name);
+      }
+
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(previewHtml, "text/html");
+      const firstParagraph = Array.from(doc.querySelectorAll("p"))
+        .map((node) => node.textContent?.trim() ?? "")
+        .find((value) => value.length > 0);
+
+      if (!firstParagraph) {
+        return inferCandidateNameFromFile(file.name);
+      }
+
+      return toTitleCaseName(extractNameFromParagraph(firstParagraph)) || inferCandidateNameFromFile(file.name);
+    } catch {
+      return inferCandidateNameFromFile(file.name);
+    }
+  };
 
   useEffect(() => {
     if (!jobQuery.trim()) {
@@ -602,148 +564,265 @@ function UploadCvTab() {
     return () => controller.abort();
   }, [jobQuery]);
 
-  const submit = () => {
-    if (!canSubmit || !cvFile) return;
-    setRows((prev) => [
-      ...prev,
-      { name, jobId, jobName, clientName, source, cvFileName: cvFile.name }
-    ]);
-    setName("");
+  function resetLeftFormAfterQueue() {
+    setJobQuery("");
     setJobId("");
     setJobName("");
     setClientName("");
     setSource("");
-    setCvFile(null);
+    setBulkCvFiles([]);
+    setFileInputKey((k) => k + 1);
+    setIsJobDropdownOpen(false);
+  }
+
+  function clearIntakeForm() {
+    resetLeftFormAfterQueue();
+    setRows([]);
+  }
+
+  async function addToQueue() {
+    if (!canAddToQueue || isAddingToQueue) return;
+    const pendingFiles = [...bulkCvFiles];
+    const pendingJobId = jobId;
+    const pendingJobName = jobName;
+    const pendingClientName = clientName;
+    const pendingSource = source;
+
+    setIsAddingToQueue(true);
+    try {
+      const names = await Promise.all(
+        pendingFiles.map(async (file) => ({
+          file,
+          name: toTitleCaseName(await extractCandidateNameFromCv(file))
+        }))
+      );
+
+      const nextRows: UploadRow[] = names.map(({ file, name: extractedName }) => ({
+        name: extractedName,
+        jobId: pendingJobId,
+        jobName: pendingJobName,
+        clientName: pendingClientName,
+        source: pendingSource,
+        cvFileName: file.name
+      }));
+
+      setRows((prev) => [...prev, ...nextRows]);
+      resetLeftFormAfterQueue();
+    } finally {
+      setIsAddingToQueue(false);
+    }
+  }
+
+  const onManatalCvDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const onManatalCvDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const list = Array.from(e.dataTransfer.files).filter(
+      (f) =>
+        /\.pdf$/i.test(f.name) ||
+        /\.docx?$/i.test(f.name) ||
+        f.type === "application/pdf" ||
+        f.type === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
+        f.type === "application/msword"
+    );
+    if (list.length > 0) {
+      setBulkCvFiles(list);
+    }
   };
 
   return (
-    <section className="surface-card p-5">
-      <h2 className="mb-4 text-[15px] font-bold tracking-[0.12em] uppercase text-cyan-300">Upload to Manatal</h2>
+    <div className="flex h-full min-h-0 flex-1 flex-col gap-3 overflow-hidden">
+      <section className="grid min-h-0 flex-1 gap-6 xl:grid-cols-[340px_1fr]">
+        <div className="surface-card flex h-full min-h-0 flex-col gap-3 overflow-y-auto p-5">
+          <div>
+            <SectionLabel className="!text-[color:var(--muted)]">Upload Candidate CV *</SectionLabel>
+            <label
+              className="cv-intake-upload-label cv-intake-drop-zone panel-border mt-3 flex min-h-[140px] cursor-pointer flex-col items-center justify-center gap-3 rounded-[16px] bg-white/[0.02] px-5 py-4 text-center transition-colors duration-200 hover:border-cyan-400/35 hover:bg-cyan-400/[0.04]"
+              onDragOver={onManatalCvDragOver}
+              onDrop={onManatalCvDrop}
+            >
+              <div className="cv-intake-upload-icon grid h-12 w-12 shrink-0 place-items-center rounded-[14px] border border-cyan-400/25 bg-cyan-400/12 text-cyan-300">
+                <Upload className="h-6 w-6" strokeWidth={1.75} aria-hidden />
+              </div>
+              {bulkCvFiles.length > 0 ? (
+                <>
+                  <div className="text-[13px] font-semibold text-[color:var(--text)]">
+                    {bulkCvFiles.length} CV file{bulkCvFiles.length === 1 ? "" : "s"} selected
+                  </div>
+                  <div className="text-[12px] leading-relaxed text-[color:var(--muted)]">
+                    Drop to replace, or browse to change selection.
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="max-w-[280px] text-[15px] font-bold leading-snug text-[color:var(--text)]">
+                    <span className="block">Drop PDF or DOCX here, or browse to</span>
+                    <span className="block">upload</span>
+                  </div>
+                  <div className="text-[12px] text-[color:var(--muted)]">Accepted formats: PDF or DOCX</div>
+                </>
+              )}
+              <input
+                key={fileInputKey}
+                type="file"
+                multiple
+                accept=".pdf,.doc,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/msword"
+                className="hidden"
+                onChange={(e) => setBulkCvFiles(Array.from(e.target.files ?? []))}
+              />
+            </label>
+            <p className="cv-intake-helper-text mt-3 text-center text-xs text-[color:var(--muted)]">
+              Candidate names are inferred from the first paragraph of each CV when you add to the queue.
+            </p>
+          </div>
 
-      <div className="grid gap-4 md:grid-cols-12">
-        <div className="flex flex-col gap-2 md:col-span-6">
-          <label className="block text-sm">Candidate Name *</label>
-          <input value={name} onChange={(e) => setName(e.target.value)} required aria-required="true" className="glass-input h-11 w-full px-3" placeholder="Dina Seikh Salleh" />
-        </div>
-        <div className="relative flex flex-col gap-2 md:col-span-6">
-          <label className="block text-sm">Job ID (search wildcard) *</label>
-          <input
-            value={jobQuery}
-            onChange={(e) => {
-              setJobQuery(e.target.value);
-              setJobId("");
-              setJobName("");
-              setClientName("");
-            }}
-            onFocus={() => setIsJobDropdownOpen(jobSuggestions.length > 0)}
-            required
-            aria-required="true"
-            className="glass-input h-11 w-full px-3"
-            placeholder="Start typing job id or name..."
-          />
-          {isJobDropdownOpen && jobSuggestions.length > 0 ? (
-            <ul className="absolute z-30 max-h-44 w-full overflow-auto rounded-md border border-white/20 bg-[#0f172a] p-1 text-sm shadow-lg">
-              {jobSuggestions.map((job) => (
-                <li
-                  key={job.id}
-                  onClick={() => {
-                    setJobId(job.id);
-                    setJobName(job.name);
-                    setClientName(job.client);
-                    setJobQuery(`${job.id} - ${job.name}`);
-                    setIsJobDropdownOpen(false);
-                  }}
-                  className="cursor-pointer rounded px-2 py-1 hover:bg-cyan-500/20"
-                >
-                  {job.id} — {job.name}
-                </li>
-              ))}
-            </ul>
-          ) : null}
-        </div>
-        <div className="flex flex-col gap-2 md:col-span-3">
-          <label className="block text-sm text-slate-400">Job Name</label>
-          <input value={jobName} readOnly className="glass-input h-11 w-full px-3 bg-slate-900" placeholder="Selected job name appears here" />
-        </div>
-        <div className="flex flex-col gap-2 md:col-span-3">
-          <label className="block text-sm text-slate-400">Client Name</label>
-          <input value={clientName} readOnly className="glass-input h-11 w-full px-3 bg-slate-900" placeholder="Selected client name appears here" />
-        </div>
-        <div className="flex flex-col gap-2 md:col-span-3">
-          <label className="block text-sm">Source *</label>
-          <select value={source} onChange={(e) => setSource(e.target.value)} required aria-required="true" className="glass-input h-11 w-full px-3 bg-[#0f172a] text-white">
-            <option value="">Select source</option>
-            <option value="Monster">Monster</option>
-            <option value="LinkedIn">LinkedIn</option>
-            <option value="Indeed">Indeed</option>
-            <option value="Referral">Referral</option>
-            <option value="Other">Other</option>
-          </select>
-        </div>
-        <div className="flex flex-col gap-2 md:col-span-3">
-          <label className="block text-sm">CV File *</label>
           <div className="relative">
+            <SectionLabel className="!text-[color:var(--muted)]">Job ID *</SectionLabel>
             <input
-              type="file"
-              onChange={(e) => setCvFile(e.target.files?.[0] ?? null)}
+              value={jobQuery}
+              onChange={(e) => {
+                setJobQuery(e.target.value);
+                setJobId("");
+                setJobName("");
+                setClientName("");
+              }}
+              onFocus={() => setIsJobDropdownOpen(jobSuggestions.length > 0)}
               required
               aria-required="true"
-              className="glass-input h-11 w-full px-3 pr-12"
-              accept=".pdf,.doc,.docx"
+              className="glass-input mt-3 h-12 w-full px-4"
+              placeholder="Type to search — Job ID or Job Name"
             />
-            <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-300">
-              📎
-            </span>
+            {isJobDropdownOpen && jobSuggestions.length > 0 ? (
+              <ul className="cv-intake-job-dropdown absolute left-0 right-0 top-[calc(100%+10px)] z-30 max-h-44 overflow-auto rounded-md border border-[var(--border)] bg-[var(--surface)] p-1 text-sm text-[color:var(--text)] shadow-lg">
+                {jobSuggestions.map((job) => (
+                  <li
+                    key={job.id}
+                    onClick={() => {
+                      setJobId(job.id);
+                      setJobName(job.name);
+                      setClientName(job.client);
+                      setJobQuery(`${job.id} — ${job.name}`);
+                      setIsJobDropdownOpen(false);
+                    }}
+                    className="cursor-pointer rounded px-2 py-2 text-[color:var(--text)] hover:bg-cyan-500/15"
+                  >
+                    <span className="font-medium text-cyan-400">{job.id}</span>
+                    <span className="text-[color:var(--muted)]"> · </span>
+                    <span>{job.name}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+          </div>
+
+          <div>
+            <SectionLabel className="!text-[color:var(--muted)]">Client Name</SectionLabel>
+            <input
+              value={clientName}
+              readOnly
+              className="glass-input mt-3 h-12 w-full px-4"
+              placeholder="Auto-filled when you select a job"
+            />
+          </div>
+
+          <div>
+            <SectionLabel className="!text-[color:var(--muted)]">Source *</SectionLabel>
+            <select
+              value={source}
+              onChange={(e) => setSource(e.target.value)}
+              required
+              aria-required="true"
+              className="glass-input mt-3 h-12 w-full px-4 text-[color:var(--text)]"
+            >
+              <option value="">Select source</option>
+              <option value="LinkedIn">LinkedIn</option>
+              <option value="JobStreet">JobStreet</option>
+              <option value="Indeed">Indeed</option>
+              <option value="Referral">Referral</option>
+              <option value="Direct">Direct</option>
+              <option value="Monster">Monster</option>
+            </select>
+          </div>
+
+          <div className="flex min-h-[54px] gap-3">
+            <button
+              type="button"
+              onClick={() => void addToQueue()}
+              disabled={!canAddToQueue || isAddingToQueue}
+              className="primary-button flex min-h-[54px] min-w-0 flex-1 items-center justify-center rounded-[14px] px-5 text-[13px] font-semibold disabled:pointer-events-none disabled:!opacity-50"
+            >
+              {isAddingToQueue ? "Adding…" : "Add to Queue"}
+            </button>
+            <button
+              type="button"
+              onClick={clearIntakeForm}
+              disabled={isAddingToQueue}
+              className="glass-button flex min-h-[54px] shrink-0 items-center justify-center rounded-[14px] px-4 text-[12px] font-semibold disabled:pointer-events-none disabled:opacity-55"
+            >
+              Clear
+            </button>
           </div>
         </div>
 
-        <div className="flex items-end gap-3 pt-1 md:col-span-12">
-          <button onClick={submit} disabled={!canSubmit} className="primary-button rounded-[10px] px-5 py-2 disabled:opacity-50">
-            Add row
-          </button>
-          <button onClick={() => {
-            if (!canSubmit || !cvFile) return;
-            // placeholder for real upload integration
-            alert('Uploaded to Manatal: ' + name + ' / ' + jobId);
-          }} className="glass-button rounded-[10px] px-5 py-2">
-            Upload to Manatal
-          </button>
-        </div>
-      </div>
+        <div className="surface-card flex h-full min-h-0 flex-col overflow-hidden p-5">
+          <div className="mb-3 flex shrink-0 items-center justify-between">
+            <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[color:var(--muted)]">
+              {rows.length} candidate{rows.length !== 1 ? "s" : ""} queued
+            </span>
+            <button
+              type="button"
+              onClick={() => {
+                if (!canUploadToManatal) return;
+                alert(`Uploaded ${rows.length} candidate${rows.length === 1 ? "" : "s"} to Manatal.`);
+              }}
+              disabled={!canUploadToManatal || isAddingToQueue}
+              className="primary-button rounded-[10px] px-5 py-2 text-[13px] disabled:pointer-events-none disabled:!opacity-50"
+            >
+              Upload to Manatal
+            </button>
+          </div>
 
-      <div className="mt-5 overflow-x-auto">
-        <table className="w-full text-left text-sm">
-          <thead>
-            <tr className="text-slate-300">
-              <th className="px-3 py-2">Name</th>
-              <th className="px-3 py-2">Job ID</th>
-              <th className="px-3 py-2">Job Name</th>
-              <th className="px-3 py-2">Client Name</th>
-              <th className="px-3 py-2">Source</th>
-              <th className="px-3 py-2">CV</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.length === 0 ? (
-              <tr>
-                <td colSpan={6} className="px-3 py-5 text-center text-slate-400">Add candidate records to preview rows.</td>
-              </tr>
-            ) : (
-              rows.map((row, idx) => (
-                <tr key={`${row.jobId}-${idx}`} className="border-y border-white/10">
-                  <td className="px-3 py-2">{row.name}</td>
-                  <td className="px-3 py-2">{row.jobId}</td>
-                  <td className="px-3 py-2">{row.jobName}</td>
-                  <td className="px-3 py-2">{row.clientName}</td>
-                  <td className="px-3 py-2">{row.source}</td>
-                  <td className="px-3 py-2">{row.cvFileName}</td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
-    </section>
+          <div className="panel-border flex min-h-0 flex-1 flex-col overflow-hidden rounded-[16px]">
+            <div className="min-h-0 flex-1 overflow-x-auto overflow-y-auto">
+              <table className="cv-intake-table w-full text-left text-sm">
+                <thead>
+                  <tr className="text-slate-300">
+                    <th className="px-3 py-2">Name</th>
+                    <th className="px-3 py-2">Job ID</th>
+                    <th className="px-3 py-2">Source</th>
+                    <th className="px-3 py-2">CV</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {rows.length === 0 ? (
+                    <tr>
+                      <td colSpan={4} className="cv-intake-table-empty text-center text-slate-400">
+                        No candidates queued yet
+                      </td>
+                    </tr>
+                  ) : (
+                    rows.map((row, idx) => (
+                      <tr key={`${row.jobId}-${row.cvFileName}-${idx}`} className="border-y border-white/10">
+                        <td className="px-3 py-2">{row.name}</td>
+                        <td className="px-3 py-2">{row.jobId}</td>
+                        <td className="px-3 py-2">{row.source}</td>
+                        <td className="px-3 py-2" title={row.cvFileName}>
+                          {row.cvFileName}
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
   );
 }
 
@@ -828,9 +907,9 @@ function RubricGeneratorTab() {
   }
 
   return (
-    <section className="mx-auto w-full max-w-[700px]">
+    <section className="rubric-generator-tab mx-auto w-full max-w-[700px]">
       <div className="surface-card flex flex-col gap-6 p-8">
-        <h2 className="mb-4 text-[15px] font-bold tracking-[0.12em] uppercase text-cyan-300">Rubric Generator</h2>
+        <h2 className="opal-heading-panel mb-4 text-[15px] font-bold tracking-[0.12em] uppercase">Rubric Generator</h2>
 
         <div className="flex flex-col gap-3 md:flex-row">
           <div className="relative flex-1">
@@ -845,7 +924,7 @@ function RubricGeneratorTab() {
             />
 
             {isDropdownOpen && jobs.length > 0 ? (
-              <div className="panel-border absolute left-0 right-0 top-[calc(100%+10px)] z-20 overflow-hidden rounded-[16px] bg-[#0f1115] shadow-[0_24px_60px_rgba(0,0,0,0.55)]">
+              <div className="rubric-job-dropdown panel-border absolute left-0 right-0 top-[calc(100%+10px)] z-20 overflow-hidden rounded-[16px] bg-[var(--card)] shadow-[0_24px_60px_rgba(0,0,0,0.55)]">
                 <div className="grid grid-cols-[120px_1fr_1fr] gap-3 border-b border-white/8 px-4 py-3 text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-500">
                   <span>Job ID</span>
                   <span>Job Name</span>
@@ -862,9 +941,9 @@ function RubricGeneratorTab() {
                     }}
                     className="grid w-full grid-cols-[120px_1fr_1fr] gap-3 border-t border-white/6 px-4 py-3 text-left transition-colors duration-200 hover:bg-cyan-400/8"
                   >
-                    <span className="text-cyan-400">{job.id}</span>
-                    <span className="text-slate-100">{job.name}</span>
-                    <span className="text-slate-400">{job.client}</span>
+                    <span className="rubric-job-id font-medium">{job.id}</span>
+                    <span className="opal-text-body">{job.name}</span>
+                    <span className="opal-text-muted">{job.client}</span>
                   </button>
                 ))}
               </div>
@@ -891,7 +970,7 @@ function RubricGeneratorTab() {
 
         {rubric ? (
           <div className="panel-border rounded-[16px] bg-white/[0.02] p-5">
-            <pre className="whitespace-pre-wrap font-sans leading-7 text-slate-200">{rubric}</pre>
+            <pre className="opal-text-body whitespace-pre-wrap font-sans leading-7">{rubric}</pre>
           </div>
         ) : null}
       </div>
@@ -903,6 +982,7 @@ function CvFormatterTab() {
   type PreviewTab = "original" | "formatted";
 
   const [candidateName, setCandidateName] = useState("");
+  const [fileInputKey, setFileInputKey] = useState(0);
   const [file, setFile] = useState<File | null>(null);
   const [status, setStatus] = useState<StatusMessage>(null);
   const [previewHtml, setPreviewHtml] = useState("");
@@ -915,6 +995,29 @@ function CvFormatterTab() {
   const [isOriginalPreviewLoading, setIsOriginalPreviewLoading] = useState(false);
   const previewRef = useRef<HTMLDivElement | null>(null);
   const originalPreviewRef = useRef<HTMLDivElement | null>(null);
+  const formatAbortRef = useRef<AbortController | null>(null);
+
+  useEffect(() => {
+    if (!file) {
+      return;
+    }
+    const ac = new AbortController();
+    const fd = new FormData();
+    fd.append("file", file);
+
+    void fetch("/api/cv-suggest-name", { method: "POST", body: fd, signal: ac.signal })
+      .then((r) => r.json())
+      .then((d: { suggestedName?: string | null }) => {
+        const suggested = (d.suggestedName ?? "").trim();
+        if (!suggested) {
+          return;
+        }
+        setCandidateName((prev) => (prev.trim() ? prev : suggested));
+      })
+      .catch(() => {});
+
+    return () => ac.abort();
+  }, [file]);
 
   function renderWordPreview(html: string) {
     if (previewRef.current) {
@@ -1010,13 +1113,21 @@ function CvFormatterTab() {
     };
   }, [file]);
 
+  function cancelFormatRequest() {
+    formatAbortRef.current?.abort();
+  }
+
   async function formatCv() {
     if (!file || !candidateName.trim()) {
       setStatus({ state: "error", message: "Add a candidate name and attach a PDF or DOCX before formatting." });
       return;
     }
 
-    setStatus({ state: "loading", message: "Formatting CV into the Oxydata Word layout..." });
+    formatAbortRef.current?.abort();
+    const ac = new AbortController();
+    formatAbortRef.current = ac;
+
+    setStatus({ state: "loading", message: "Formatting…" });
     const formData = new FormData();
     formData.append("candidateName", candidateName.trim());
     formData.append("file", file);
@@ -1024,16 +1135,20 @@ function CvFormatterTab() {
     try {
       const response = await fetch("/api/cv-format", {
         method: "POST",
-        body: formData
+        body: formData,
+        signal: ac.signal
       });
       const data = (await response.json()) as {
         previewHtml?: string;
         downloadUrl?: string;
         error?: string;
+        detail?: string;
+        hint?: string;
       };
 
       if (!response.ok) {
-        throw new Error(data.error ?? "Unable to format CV.");
+        const parts = [data.error, data.detail, data.hint].filter(Boolean);
+        throw new Error(parts.length > 0 ? parts.join(" — ") : "Unable to format CV.");
       }
 
       setPreviewHtml(data.previewHtml ?? "");
@@ -1041,10 +1156,24 @@ function CvFormatterTab() {
       setRightPanelTab("formatted");
       setStatus({ state: "success", message: "Formatted CV preview generated successfully." });
     } catch (error) {
-      setStatus({
-        state: "error",
-        message: error instanceof Error ? error.message : "Unexpected CV formatting error."
-      });
+      const aborted =
+        (error instanceof DOMException && error.name === "AbortError") ||
+        (typeof error === "object" &&
+          error !== null &&
+          "name" in error &&
+          (error as { name: string }).name === "AbortError");
+      if (aborted) {
+        setStatus({ state: "error", message: "Formatting was cancelled." });
+      } else {
+        setStatus({
+          state: "error",
+          message: error instanceof Error ? error.message : "Unexpected CV formatting error."
+        });
+      }
+    } finally {
+      if (formatAbortRef.current === ac) {
+        formatAbortRef.current = null;
+      }
     }
   }
 
@@ -1057,34 +1186,35 @@ function CvFormatterTab() {
   }, [file]);
 
   const isFormatting = status?.state === "loading";
+
+  function clearCvFormatter() {
+    setCandidateName("");
+    setFile(null);
+    setFileInputKey((k) => k + 1);
+    setStatus(null);
+    setPreviewHtml("");
+    setDownloadUrl("");
+    setRightPanelTab("original");
+  }
+
   const hasOriginalFile = Boolean(file && originalFileUrl);
   const isOriginalPdf = Boolean(file && file.name.toLowerCase().endsWith(".pdf"));
+  const outputIsPaper = rightPanelTab === "formatted" && Boolean(previewHtml);
 
   return (
-    <section className="grid gap-6 xl:grid-cols-[340px_1fr]">
-      <div className="surface-card flex flex-col gap-5 p-5">
-        <h2 className="mb-4 text-[15px] font-bold tracking-[0.12em] uppercase text-cyan-300">CV Formatter</h2>
+    <div className="cv-formatter-root flex h-full min-h-0 flex-1 flex-col gap-3 overflow-hidden">
+      <section className="grid min-h-0 flex-1 gap-6 xl:grid-cols-[340px_1fr]">
+      <div className="surface-card flex h-full min-h-0 flex-col gap-5 overflow-y-auto p-5">
         <div>
-          <SectionLabel>Candidate Name *</SectionLabel>
-          <input
-            value={candidateName}
-            onChange={(event) => setCandidateName(event.target.value)}
-            placeholder="Enter full candidate name"
-            required
-            aria-required="true"
-            className="glass-input mt-3 h-12 w-full px-4"
-          />
-        </div>
-
-        <div>
-          <SectionLabel>CV File *</SectionLabel>
-          <label className="panel-border mt-3 flex min-h-[220px] cursor-pointer flex-col items-center justify-center rounded-[16px] bg-white/[0.03] px-5 py-6 text-center transition-colors duration-200 hover:bg-white/[0.05]">
-            <div className="grid h-12 w-12 place-items-center rounded-[14px] bg-white/[0.05] text-cyan-400">
+          <SectionLabel className="!text-[color:var(--muted)]">Upload Candidate CV *</SectionLabel>
+          <label className="cv-formatter-upload-label panel-border mt-3 flex min-h-[220px] cursor-pointer flex-col items-center justify-center rounded-[16px] px-5 py-6 text-center transition-colors duration-200">
+            <div className="cv-formatter-upload-icon grid h-12 w-12 place-items-center rounded-[14px]">
               <UploadIcon />
             </div>
-            <div className="mt-4 text-[13px] font-semibold text-slate-100">{selectedFileLabel}</div>
-            <div className="mt-2 text-[11px] text-slate-500">Accepted formats: PDF or DOCX</div>
+            <div className="mt-4 text-[13px] font-semibold text-[color:var(--text)]">{selectedFileLabel}</div>
+            <div className="mt-2 text-[11px] text-[color:var(--muted)]">Accepted formats: PDF or DOCX</div>
             <input
+              key={fileInputKey}
               type="file"
               accept=".pdf,.doc,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
               className="hidden"
@@ -1098,20 +1228,61 @@ function CvFormatterTab() {
           </label>
         </div>
 
-        <button
-          type="button"
-          onClick={formatCv}
-          disabled={isFormatting}
-          className="primary-button min-h-[54px] rounded-[14px] px-5 disabled:pointer-events-none disabled:opacity-55"
-        >
-          {isFormatting ? "Formatting…" : "Format CV"}
-        </button>
+        <div>
+          <SectionLabel className="!text-[color:var(--muted)]">Candidate Name *</SectionLabel>
+          <input
+            value={candidateName}
+            onChange={(event) => setCandidateName(event.target.value)}
+            placeholder="Enter full candidate name"
+            required
+            aria-required="true"
+            className="glass-input mt-3 h-12 w-full px-4"
+          />
+        </div>
 
-        {status ? <StatusBox status={status} /> : null}
+        <div className="flex min-h-[54px] gap-3">
+          <button
+            type="button"
+            onClick={formatCv}
+            disabled={isFormatting}
+            className="primary-button flex min-h-[54px] min-w-0 flex-1 items-center justify-center rounded-[14px] px-5 text-[13px] font-semibold disabled:pointer-events-none disabled:opacity-55"
+          >
+            {isFormatting ? "Formatting…" : "Format CV"}
+          </button>
+          <button
+            type="button"
+            onClick={isFormatting ? cancelFormatRequest : clearCvFormatter}
+            className="glass-button flex min-h-[54px] shrink-0 items-center justify-center rounded-[14px] px-4 text-[12px] font-semibold disabled:pointer-events-none disabled:opacity-55"
+          >
+            {isFormatting ? "Cancel" : "Clear"}
+          </button>
+        </div>
+
+        {status?.state === "loading" ? (
+          <div
+            className="cv-formatter-status panel-border flex flex-col gap-3 rounded-[10px] px-4 py-3 status-loading"
+            role="status"
+            aria-busy="true"
+            aria-label="Formatting CV in progress"
+          >
+            <div className="flex items-center gap-2 text-[13px] font-medium text-[color:var(--cyan)]">
+              <ClockIcon />
+              <span>Formatting CV…</span>
+            </div>
+            <div className="cv-format-progress-track cv-formatter-progress w-full max-w-full">
+              <div className="cv-format-progress-bar cv-formatter-progress-bar" />
+            </div>
+            <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-[color:var(--muted)]">
+              Use Cancel to stop — otherwise keep this tab open
+            </p>
+          </div>
+        ) : status ? (
+          <StatusBox status={status} className="cv-formatter-status" />
+        ) : null}
       </div>
 
-      <div className="surface-card p-5">
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-4">
+      <div className="surface-card flex h-full min-h-0 flex-col overflow-y-auto p-5">
+        <div className="mb-4 flex shrink-0 flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <span
               id="cvDot"
@@ -1120,32 +1291,26 @@ function CvFormatterTab() {
                   ? "animate-pulse bg-amber-400 shadow-[0_0_12px_rgba(251,191,36,0.55)]"
                   : previewHtml
                     ? "bg-emerald-400 shadow-[0_0_12px_rgba(52,211,153,0.55)]"
-                    : "bg-cyan-400 shadow-[0_0_12px_rgba(6,182,212,0.45)]"
+                    : "cv-formatter-dot-idle"
               }`}
             />
-            <span className="text-[12px] font-semibold uppercase tracking-[0.12em] text-slate-300">CV Format</span>
-            <div className="inline-flex rounded-[10px] border border-white/[0.12] bg-white/[0.03] p-1">
+            <span className="text-[12px] font-semibold uppercase tracking-[0.12em] text-[color:var(--muted)]">
+              CV Format
+            </span>
+            <div className="cv-formatter-seg-wrap inline-flex p-1">
               <button
                 type="button"
                 onClick={() => setRightPanelTab("original")}
-                className={`rounded-[8px] px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.08em] transition-colors ${
-                  rightPanelTab === "original"
-                    ? "bg-cyan-400/20 text-cyan-200"
-                    : "text-slate-300 hover:text-cyan-200"
-                }`}
-                data-active={rightPanelTab === "original"}
+                className="cv-formatter-seg-btn"
+                data-active={rightPanelTab === "original" ? "true" : "false"}
               >
                 Ori Format
               </button>
               <button
                 type="button"
                 onClick={() => setRightPanelTab("formatted")}
-                className={`rounded-[8px] px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.08em] transition-colors ${
-                  rightPanelTab === "formatted"
-                    ? "bg-cyan-400/20 text-cyan-200"
-                    : "text-slate-300 hover:text-cyan-200"
-                }`}
-                data-active={rightPanelTab === "formatted"}
+                className="cv-formatter-seg-btn"
+                data-active={rightPanelTab === "formatted" ? "true" : "false"}
               >
                 Oxy Format
               </button>
@@ -1161,7 +1326,7 @@ function CvFormatterTab() {
                   event.preventDefault();
                 }
               }}
-              className={`glass-button rounded-lg px-3 py-1.5 text-xs ${!downloadUrl ? "pointer-events-none opacity-30" : ""}`}
+              className={`cv-formatter-download glass-button rounded-lg px-3 py-1.5 text-xs ${!downloadUrl ? "pointer-events-none opacity-30" : ""}`}
               aria-disabled={!downloadUrl}
             >
               Download
@@ -1172,19 +1337,20 @@ function CvFormatterTab() {
         <div
           id="cvOutputBox"
           aria-busy={rightPanelTab === "formatted" ? isFormatting : false}
-          className={`panel-border rounded-[16px] ${
-            rightPanelTab === "formatted"
-              ? `h-[624px] overflow-y-scroll ${previewHtml ? "bg-white text-slate-800" : "bg-white/[0.02]"}`
-              : "min-h-[624px] overflow-hidden bg-white/[0.02]"
+          className={`panel-border flex min-h-0 flex-1 flex-col rounded-[16px] ${outputIsPaper ? "cv-formatter-output--paper" : "cv-formatter-output--chrome"} ${
+            rightPanelTab === "formatted" ? "overflow-y-auto overflow-x-hidden" : "overflow-hidden"
           }`}
         >
           {rightPanelTab === "original" && !hasOriginalFile ? (
-            <div className="flex min-h-[624px] items-center justify-center p-8">
-              <EmptyState
-                title="No CV loaded yet"
-                subtitle="Upload a CV file to preview the original document in this panel."
-                icon={<DocumentIcon />}
-              />
+            <div className="flex min-h-0 flex-1 flex-col items-center justify-center p-8">
+              <div className="cv-formatter-empty-wrap">
+                <EmptyState
+                  title="No CV loaded yet"
+                  subtitle="Upload a CV file to preview the original document in this panel."
+                  icon={<DocumentIcon />}
+                  iconClassName="cv-formatter-empty-icon"
+                />
+              </div>
             </div>
           ) : null}
 
@@ -1192,29 +1358,32 @@ function CvFormatterTab() {
             <iframe
               title="Original CV preview"
               src={originalFileUrl}
-              className="h-[624px] w-full bg-white"
+              className="min-h-0 w-full flex-1 border-0 bg-white"
             />
           ) : null}
 
           {rightPanelTab === "original" && hasOriginalFile && !isOriginalPdf && isOriginalPreviewLoading ? (
-            <div className="flex min-h-[624px] flex-col items-center justify-center gap-3 p-8 text-center">
-              <div className="grid h-12 w-12 place-items-center rounded-[14px] bg-white/[0.06] text-cyan-400">
+            <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-3 p-8 text-center">
+              <div className="cv-formatter-empty-icon grid h-12 w-12 place-items-center rounded-[14px]">
                 <ClockIcon />
               </div>
-              <p className="text-[14px] font-semibold text-slate-100">Building original preview</p>
-              <p className="max-w-sm text-[12px] leading-relaxed text-slate-400">
+              <p className="text-[14px] font-semibold text-[color:var(--text)]">Building original preview</p>
+              <p className="max-w-sm text-[12px] leading-relaxed text-[color:var(--muted)]">
                 Converting the uploaded file to an inline preview format.
               </p>
             </div>
           ) : null}
 
           {rightPanelTab === "original" && hasOriginalFile && !isOriginalPdf && !isOriginalPreviewLoading && originalPreviewError ? (
-            <div className="flex min-h-[624px] items-center justify-center p-8">
-              <EmptyState
-                title="Original preview unavailable"
-                subtitle={originalPreviewError}
-                icon={<DocumentIcon />}
-              />
+            <div className="flex min-h-0 flex-1 flex-col items-center justify-center p-8">
+              <div className="cv-formatter-empty-wrap">
+                <EmptyState
+                  title="Original preview unavailable"
+                  subtitle={originalPreviewError}
+                  icon={<DocumentIcon />}
+                  iconClassName="cv-formatter-empty-icon"
+                />
+              </div>
             </div>
           ) : null}
 
@@ -1222,7 +1391,7 @@ function CvFormatterTab() {
             <iframe
               title="Original CV preview"
               src={originalPreviewUrl}
-              className="h-[624px] w-full bg-white"
+              className="min-h-0 w-full flex-1 border-0 bg-white"
             />
           ) : null}
 
@@ -1235,49 +1404,50 @@ function CvFormatterTab() {
               !isOriginalPreviewLoading &&
               !originalPreviewError &&
               Boolean(originalPreviewHtml)
-                ? "block min-h-[560px] bg-white p-4 text-slate-800 sm:p-6"
+                ? "min-h-0 flex-1 overflow-y-auto bg-white p-4 text-slate-800 sm:p-6"
                 : "hidden"
             }
           />
 
           {rightPanelTab === "formatted" && isFormatting ? (
-            <div className="flex min-h-[624px] flex-col items-center justify-center gap-6 p-8 text-center">
-              <div className="grid h-14 w-14 place-items-center rounded-[16px] bg-white/[0.06] text-cyan-400">
+            <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-6 p-8 text-center">
+              <div className="cv-formatter-empty-icon grid h-14 w-14 place-items-center rounded-[16px]">
                 <ClockIcon />
               </div>
-              <div>
-                <p className="text-[15px] font-semibold text-slate-100">Converting your CV</p>
-                <p className="mt-2 max-w-sm text-[13px] leading-relaxed text-slate-400">
-                  {status?.message ??
-                    "Parsing the document and building the Oxydata Word layout. This can take up to a minute."}
-                </p>
-              </div>
-              <div className="w-full px-4">
-                <div className="cv-format-progress-track">
-                  <div className="cv-format-progress-bar" />
+              <div className="w-full max-w-md">
+                <p className="text-[15px] font-semibold text-[color:var(--text)]">Converting your CV</p>
+                <div className="cv-format-progress-track cv-formatter-progress mt-4 w-full max-w-full">
+                  <div className="cv-format-progress-bar cv-formatter-progress-bar" />
                 </div>
-                <p className="mt-3 text-[11px] font-medium uppercase tracking-[0.14em] text-slate-500">
-                  Please wait — do not close this tab
+                <p className="mt-3 max-w-sm text-[13px] leading-relaxed text-[color:var(--muted)]">
+                  Parsing the document and building the Oxydata Word layout. This can take up to a minute.
                 </p>
               </div>
+              <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-[color:var(--muted)]">
+                Use Cancel in the left panel to stop
+              </p>
             </div>
           ) : null}
           {rightPanelTab === "formatted" && !previewHtml && !isFormatting ? (
-            <div className="flex min-h-[624px] items-center justify-center p-8">
-              <EmptyState
-                title="No formatted CV yet"
-                subtitle="Upload a CV and run the formatter to generate a Word-style preview here."
-                icon={<DocumentIcon />}
-              />
+            <div className="flex min-h-0 flex-1 flex-col items-center justify-center p-8">
+              <div className="cv-formatter-empty-wrap">
+                <EmptyState
+                  title="No formatted CV yet"
+                  subtitle="Upload a CV and run the formatter to generate a Word-style preview here."
+                  icon={<DocumentIcon />}
+                  iconClassName="cv-formatter-empty-icon"
+                />
+              </div>
             </div>
           ) : null}
           <div
             ref={previewRef}
-            className={rightPanelTab === "formatted" && previewHtml ? "block min-h-[560px] p-4 sm:p-6" : "hidden"}
+            className={rightPanelTab === "formatted" && previewHtml ? "min-h-0 flex-1 overflow-y-auto p-4 sm:p-6" : "hidden"}
           />
         </div>
       </div>
     </section>
+    </div>
   );
 }
 
@@ -1359,7 +1529,7 @@ function AiCandidateScoringTab() {
     for (const field of filledJobIds) {
       setProgressEntries((prev) => [...prev, `⏳ Scoring candidates for ${field.selectedId}...`]);
       await new Promise((resolve) => setTimeout(resolve, 600));
-      setProgressEntries((prev) => [...prev, `✅ Completed ${field.selectedId} at tier threshold ${tierThreshold}%`]);
+      setProgressEntries((prev) => [...prev, `✅ Completed ${field.selectedId} at quick score threshold ${tierThreshold}%`]);
     }
 
     setProgressEntries((prev) => [...prev, `✔ Pipeline stage set to ${pipelineStage}.`]);
@@ -1368,15 +1538,13 @@ function AiCandidateScoringTab() {
 
   return (
     <section className="surface-card p-5">
-      <h2 className="mb-4 text-[15px] font-bold tracking-[0.12em] uppercase text-cyan-300">AI Scoring</h2>
-
       <div className="grid gap-4 md:grid-cols-3">
         <div>
           <label className="mb-2 block text-sm font-medium text-slate-300">Pipeline Stage</label>
           <input value={pipelineStage} onChange={(e) => setPipelineStage(e.target.value)} className="glass-input h-11 w-full px-3" />
         </div>
         <div>
-          <label className="mb-2 block text-sm font-medium text-slate-300">Tier 1 Pass Threshold (%)</label>
+          <label className="mb-2 block text-sm font-medium text-slate-300">Quick Score Threshold (%)</label>
           <input
             type="number"
             min={0}
@@ -1403,7 +1571,7 @@ function AiCandidateScoringTab() {
                 className="glass-input h-11 w-full px-3"
               />
               {openDropdownIndex === index && (jobSuggestions[index]?.length ?? 0) > 0 ? (
-                <div className="panel-border absolute left-0 right-0 top-[calc(100%+10px)] z-30 overflow-hidden rounded-[16px] bg-[#0f1115] shadow-[0_24px_60px_rgba(0,0,0,0.55)]">
+                <div className="panel-border absolute left-0 right-0 top-[calc(100%+10px)] z-30 overflow-hidden rounded-[16px] bg-[var(--surface)] shadow-[0_8px_24px_rgba(15,23,42,0.12)]">
                   <div className="grid grid-cols-[120px_1fr_1fr] gap-3 border-b border-white/8 px-4 py-3 text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-500">
                     <span>Job ID</span>
                     <span>Job Name</span>
@@ -1414,7 +1582,7 @@ function AiCandidateScoringTab() {
                       key={job.id}
                       type="button"
                       onClick={() => selectJobIdSuggestion(index, job)}
-                      className="grid w-full grid-cols-[120px_1fr_1fr] gap-3 border-t border-white/6 px-4 py-3 text-left transition-colors duration-200 hover:bg-cyan-400/8"
+                      className="grid w-full grid-cols-[120px_1fr_1fr] gap-3 border-t border-[var(--border)] px-4 py-3 text-left transition-colors duration-200 hover:bg-cyan-400/8"
                     >
                       <span className="text-cyan-400">{job.id}</span>
                       <span className="text-slate-100">{job.name}</span>
@@ -1450,7 +1618,7 @@ function AiCandidateScoringTab() {
         </button>
       </div>
 
-      <div className="mt-5 rounded-[10px] border border-white/20 bg-white/[0.02] p-4">
+      <div className="pipeline-progress-box mt-5 rounded-[10px] border border-white/20 bg-white/[0.02] p-4">
         <div className="mb-3 flex items-center justify-between">
           <h3 className="text-sm font-semibold text-slate-100">Pipeline Progress</h3>
           <label className="inline-flex cursor-pointer items-center gap-2 text-sm text-slate-300">
@@ -1475,7 +1643,9 @@ function AiCandidateScoringTab() {
         )}
 
         {isTechnicalLogVisible ? (
-          <div className="mt-3 rounded-lg border border-white/10 bg-black/20 p-2 text-xs text-slate-300">Technical log active (details are currently mock data for UI).</div>
+          <div className="technical-log-strip mt-3 rounded-lg border border-white/10 bg-black/20 p-2 text-xs text-slate-300">
+            Technical log active (details are currently mock data for UI).
+          </div>
         ) : null}
       </div>
     </section>
@@ -1746,15 +1916,703 @@ function ViewAirtableTab() {
   );
 }
 
+export function HiringStrategyTab({ mode = "embedded" }: { mode?: "embedded" | "standalone" }) {
+  type OutputType = "Full Playbook" | "Sourcing Strings Only" | "Channel Plan Only" | "Foundit Boolean";
+  type HistoryItem = {
+    id: string;
+    role: string;
+    outputType: OutputType;
+    generatedAt: string;
+    rawOutput: string;
+  };
+
+  const ALL_NATIONALITIES = ["Malaysian", "Indian", "Pakistani", "Sri Lankan", "Filipino", "Indonesian"];
+  const SOURCE_LOCATIONS = ["Malaysia", "India", "Pakistan", "Sri Lanka", "Philippines", "Indonesia"];
+  const CONSTRAINT_OPTIONS = ["Malaysian only", "Contract (no JobStreet DB)", "Prefer immediate joiners"];
+
+  const [role, setRole] = useState("Data Engineer");
+  const [roleType, setRoleType] = useState<"Permanent" | "Contract">("Permanent");
+  const [workLocation, setWorkLocation] = useState("Malaysia");
+  const [sourceLocation, setSourceLocation] = useState<string[]>(["Malaysia"]);
+  const [nationalityOpen, setNationalityOpen] = useState(true);
+  const [nationality, setNationality] = useState<string[]>([]);
+  const [monthlySalary, setMonthlySalary] = useState(14000);
+  const [currency, setCurrency] = useState<"MYR" | "USD" | "SGD" | "INR">("MYR");
+  const [yearsMin, setYearsMin] = useState(3);
+  const [yearsMax, setYearsMax] = useState(6);
+  const [mustHaveSkills, setMustHaveSkills] = useState("Python, Azure Machine Learning, React.JS");
+  const [noticePeriod, setNoticePeriod] = useState("30 days");
+  const [excludeKeywords, setExcludeKeywords] = useState("");
+  const [constraints, setConstraints] = useState<string[]>([]);
+  const [outputType, setOutputType] = useState<OutputType>("Full Playbook");
+
+  const [rawOutput, setRawOutput] = useState("");
+  const [playbookGeneratedAt, setPlaybookGeneratedAt] = useState<string | null>(null);
+  const [historyViewRole, setHistoryViewRole] = useState<string | null>(null);
+  const [historyViewOutputType, setHistoryViewOutputType] = useState<OutputType | null>(null);
+  const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
+  const [statusMessage, setStatusMessage] = useState("");
+  const [showHelp, setShowHelp] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
+  const [showYaml, setShowYaml] = useState(false);
+  const [history, setHistory] = useState<HistoryItem[]>([]);
+  const [selectedExample, setSelectedExample] = useState<"example1" | "example2">("example1");
+  const [dividerX, setDividerX] = useState(50);
+  const [dragging, setDragging] = useState(false);
+  const hiringGridRef = useRef<HTMLElement | null>(null);
+
+  const expandedNationality = nationalityOpen ? ALL_NATIONALITIES : nationality;
+  const isMalaysianOnly = !nationalityOpen && nationality.length === 1 && nationality[0] === "Malaysian";
+  const isTechnicalRole = /(engineer|developer|architect|data|cloud|devops|qa|security|analyst|ai|ml)/i.test(role);
+  const showNoLinkedinAdsWarning = isMalaysianOnly && isTechnicalRole;
+  const showContractMalaysiaWarning = roleType === "Contract" && workLocation === "Malaysia";
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem("opal.hiring.strategy.history");
+      if (!stored) return;
+      const parsed = JSON.parse(stored) as HistoryItem[];
+      setHistory(
+        Array.isArray(parsed)
+          ? parsed.slice(0, 10).map((entry) => ({
+              id: entry.id,
+              role: entry.role,
+              outputType: entry.outputType,
+              generatedAt: entry.generatedAt,
+              rawOutput: entry.rawOutput
+            }))
+          : []
+      );
+    } catch {
+      setHistory([]);
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem("opal.hiring.strategy.history", JSON.stringify(history.slice(0, 10)));
+  }, [history]);
+
+  useEffect(() => {
+    if (!dragging) return;
+    const onMove = (e: MouseEvent) => {
+      const el = hiringGridRef.current;
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      const pct = ((e.clientX - rect.left) / rect.width) * 100;
+      setDividerX(Math.max(22, Math.min(78, pct)));
+    };
+    const onUp = () => setDragging(false);
+    document.addEventListener("mousemove", onMove);
+    document.addEventListener("mouseup", onUp);
+    return () => {
+      document.removeEventListener("mousemove", onMove);
+      document.removeEventListener("mouseup", onUp);
+    };
+  }, [dragging]);
+
+  const asList = (value: string) =>
+    value
+      .split(",")
+      .map((item) => item.trim())
+      .filter(Boolean);
+
+  const yamlText = `role: "${role}"
+role_type: "${roleType}"
+work_location: "${workLocation}"
+source_location:
+${sourceLocation.map((item) => `  - ${item}`).join("\n")}
+nationality: ${nationalityOpen ? '"Open"' : `\n${expandedNationality.map((item) => `  - ${item}`).join("\n")}`}
+monthly_salary: ${monthlySalary}
+currency: "${currency}"
+years_experience:
+  min: ${yearsMin}
+  max: ${yearsMax}
+must_have_skills:
+${asList(mustHaveSkills).map((item) => `  - ${item}`).join("\n")}
+notice_period: "${noticePeriod}"
+exclude_keywords:
+${asList(excludeKeywords).length ? asList(excludeKeywords).map((item) => `  - ${item}`).join("\n") : "  -"}
+constraints:
+${constraints.length ? constraints.map((item) => `  - ${item}`).join("\n") : "  -"}
+`;
+
+  const trigger =
+    outputType === "Full Playbook"
+      ? "/playbook"
+      : outputType === "Sourcing Strings Only"
+        ? "/sourcing"
+        : outputType === "Channel Plan Only"
+          ? "/channel"
+          : "/foundit";
+
+  const copyText = async (text: string, label = "Copied") => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setStatus("success");
+      setStatusMessage(`${label} to clipboard.`);
+    } catch {
+      setStatus("error");
+      setStatusMessage("Unable to copy to clipboard.");
+    }
+  };
+
+  const buildMockOutput = (requestedType: OutputType) => {
+    const skills = asList(mustHaveSkills);
+    const excludes = asList(excludeKeywords);
+    const founditBoolean = `("${role}" OR "${role.replace(/\bSenior\b/gi, "Lead")}" OR "${role.replace(/\bEngineer\b/gi, "Developer")}") AND (${skills.slice(0, 3).map((s) => `"${s}"`).join(" OR ")})${excludes.length ? ` NOT (${excludes.map((e) => `"${e}"`).join(" OR ")})` : ""}`;
+    if (requestedType === "Foundit Boolean") {
+      return `## 1. Boolean String
+${founditBoolean}
+
+## 2. Filters to Apply
+- Location: ${sourceLocation.join(", ")}
+- Experience: ${yearsMin}-${yearsMax} years
+- Salary: up to ${currency} ${monthlySalary}
+
+## 3. Execution Steps
+1. Start in Manatal ATS and match existing applicants first.
+2. Run Foundit Boolean with filters.
+3. Capture shortlisted candidates into Manatal with source tags.`;
+    }
+    if (requestedType === "Channel Plan Only") {
+      return `## 1. Recommended Channels by Geography
+- ${workLocation}: Manatal + Foundit + LinkedIn Recruiter Lite
+- Source markets: ${sourceLocation.join(", ")}
+
+## 2. Channel Allocation Notes
+- Owned tools first: Foundit/Monster before new spend
+- Expand to paid channels only when shortlist volume is below target
+
+## 3. Priority Order
+1. Manatal ATS matching
+2. Foundit/Monster sourcing
+3. LinkedIn Recruiter Lite sourcing
+4. Paid ads only if pipeline is below target`;
+    }
+    if (requestedType === "Sourcing Strings Only") {
+      return `## 1. Foundit Boolean + Filters
+${founditBoolean}
+
+## 2. LinkedIn Search String + Filters
+("${role}" OR "${role.replace(/\bSenior\b/gi, "Lead")}") AND (${skills.map((s) => `"${s}"`).join(" OR ")})
+
+## 3. JobStreet Execution Note
+Use posting first; database usage depends on role type and country constraints.
+
+## 4. Naukri Execution Note
+${sourceLocation.includes("India") ? "India in source market: use Resdex + nvite before posting." : "Not required for current source markets."}
+
+## 5. Optional Widen-Search Version
+Broaden years range to ${Math.max(0, yearsMin - 1)}-${yearsMax + 2} and remove one narrow skill.`;
+    }
+    return `## 1. Executive Summary
+Start in Manatal ATS (matching + talent pool) before external sourcing. Role: ${role}, ${roleType}, ${workLocation}.
+
+## 2. Role and Market Snapshot
+Monthly salary: ${currency} ${monthlySalary}
+Source markets: ${sourceLocation.join(", ")}
+
+## 3. Talent Availability
+Primary source markets: ${sourceLocation.join(", ")}.
+Target experience: ${yearsMin}-${yearsMax} years.
+
+## 4. Channel Plan
+Owned/prepaid first (Foundit/Monster), then LinkedIn Recruiter Lite sourcing, then paid ads only if needed.
+
+## 5. Sourcing Actions
+1) Manatal ATS search and rediscovery
+2) Foundit Boolean + filters
+3) LinkedIn sourcing sequence
+4) Outreach cadence and follow-up
+
+## 6. Search Strings
+Foundit: ${founditBoolean}
+LinkedIn: ("${role}" OR "${role.replace(/\bSenior\b/gi, "Lead")}") AND (${skills.map((s) => `"${s}"`).join(" OR ")})
+
+## 7. Outreach Templates
+Short intro + role fit + CTA to schedule.
+
+## 8. 7-Day Execution Timeline
+Day 1-2 source list build, Day 3-4 outreach, Day 5-6 screening, Day 7 shortlist review.`;
+  };
+
+  const saveHistory = (nextRaw: string) => {
+    const item: HistoryItem = {
+      id: crypto.randomUUID(),
+      role,
+      outputType,
+      generatedAt: new Date().toISOString(),
+      rawOutput: nextRaw
+    };
+    setHistory((prev) => [item, ...prev].slice(0, 10));
+  };
+
+  const generate = async () => {
+    if (!role.trim() || !workLocation || !sourceLocation.length || !mustHaveSkills.trim()) {
+      setStatus("error");
+      setStatusMessage("Complete required fields before generating.");
+      return;
+    }
+    if (yearsMin > yearsMax) {
+      setStatus("error");
+      setStatusMessage("Years of experience min cannot exceed max.");
+      return;
+    }
+    setStatus("loading");
+    setStatusMessage("Generating...");
+    const raw = `Trigger: ${trigger}\n\nYAML:\n${yamlText}\n\n${buildMockOutput(outputType)}`;
+    setRawOutput(raw);
+    setPlaybookGeneratedAt(new Date().toISOString());
+    setHistoryViewRole(null);
+    setHistoryViewOutputType(null);
+    setStatus("success");
+    setStatusMessage(`Generated at ${new Date().toLocaleTimeString()}`);
+    saveHistory(raw);
+  };
+
+  const generateGuide = () => {
+    const raw = `## 1. Core Recruiting Flow
+Manatal-first: ATS matching, sourcing hub, outreach, activity tracking.
+
+## 2. Channel Rules by Geography
+Apply location-specific channel rules before spend.
+
+## 3. Platform Usage (Foundit, LinkedIn, JobStreet, Naukri)
+Use owned tools before paid channels.
+
+## 4. Boolean vs Filter Logic
+Keep Boolean concise; push location/experience into filters.
+
+## 5. ATS Capture Rules
+Every sourced profile must be captured in Manatal with source tags.
+
+## 6. Outreach Standards
+Operator-level and concise outreach with clear CTA.
+
+## 7. Daily Activity Targets
+Daily sourcing, outreach, follow-up, and shortlist checkpoints.`;
+    setRawOutput(raw);
+    setPlaybookGeneratedAt(new Date().toISOString());
+    setHistoryViewRole(null);
+    setHistoryViewOutputType(null);
+    setStatus("success");
+    setStatusMessage("Guide generated.");
+  };
+
+  const applyExample = (id: "example1" | "example2") => {
+    setSelectedExample(id);
+    if (id === "example1") {
+      setRole("Mid-level Data Engineer");
+      setRoleType("Permanent");
+      setWorkLocation("Malaysia");
+      setSourceLocation(["Malaysia"]);
+      setNationalityOpen(true);
+      setNationality([]);
+      setMonthlySalary(14000);
+      setCurrency("MYR");
+      setYearsMin(3);
+      setYearsMax(6);
+      setMustHaveSkills("Python, Azure Machine Learning, React.JS");
+      setNoticePeriod("30 days");
+      setExcludeKeywords("Intern, Junior, QA");
+      setConstraints([]);
+      return;
+    }
+    setRole("Senior DBA");
+    setRoleType("Permanent");
+    setWorkLocation("Malaysia");
+    setSourceLocation(["Malaysia", "India"]);
+    setNationalityOpen(false);
+    setNationality(["Malaysian", "Indian"]);
+    setMonthlySalary(16000);
+    setCurrency("MYR");
+    setYearsMin(6);
+    setYearsMax(12);
+    setMustHaveSkills("Oracle DBA, SQL Performance Tuning, Backup Recovery");
+    setNoticePeriod("60 days");
+    setExcludeKeywords("Intern");
+    setConstraints(["Prefer immediate joiners"]);
+  };
+
+  const panelRole = historyViewRole ?? role;
+  const panelOutputType = historyViewOutputType ?? outputType;
+  const panelGeneratedAtLabel = playbookGeneratedAt ? new Date(playbookGeneratedAt).toLocaleString() : null;
+
+  const isStandalone = mode === "standalone";
+
+  const intakeForm = (
+    <div className="hiring-strategy-form space-y-3">
+          <div className="mb-1">
+            <h2 className="text-[15px] font-medium text-slate-100">Hiring Strategy</h2>
+          </div>
+          <div className="text-xs font-semibold uppercase tracking-[0.12em] text-cyan-300">Section A: Role Details</div>
+          <div className="grid gap-2 md:grid-cols-12">
+            <div className="flex flex-col gap-1 md:col-span-6">
+              <label className="text-xs text-slate-300">Role *</label>
+              <input value={role} onChange={(e) => setRole(e.target.value)} className="glass-input h-10 px-3 text-sm" />
+            </div>
+            <div className="flex flex-col gap-1 md:col-span-3">
+              <label className="text-xs text-slate-300">Role Type *</label>
+              <select value={roleType} onChange={(e) => setRoleType(e.target.value as "Permanent" | "Contract")} className="glass-input h-10 bg-[#0f172a] px-3 text-sm text-white">
+                <option value="Permanent">Permanent</option>
+                <option value="Contract">Contract</option>
+              </select>
+            </div>
+            <div className="flex flex-col gap-1 md:col-span-3">
+              <label className="text-xs text-slate-300">Work Location *</label>
+              <select value={workLocation} onChange={(e) => setWorkLocation(e.target.value)} className="glass-input h-10 bg-[#0f172a] px-3 text-sm text-white">
+                {SOURCE_LOCATIONS.map((loc) => <option key={loc}>{loc}</option>)}
+              </select>
+            </div>
+            <div className="flex flex-col gap-1 md:col-span-6">
+              <label className="text-xs text-slate-300">Source Location *</label>
+              <div className="hiring-chip-grid grid grid-cols-4 gap-1 rounded-[10px] border border-white/10 bg-black/20 p-1.5">
+                {SOURCE_LOCATIONS.map((loc) => (
+                  <button
+                    key={loc}
+                    type="button"
+                    onClick={() => setSourceLocation((prev) => (prev.includes(loc) ? prev.filter((v) => v !== loc) : [...prev, loc]))}
+                    className={`hiring-loc-chip w-full rounded-full px-1.5 py-0.5 text-center text-[10px] font-medium leading-tight whitespace-nowrap ${sourceLocation.includes(loc) ? "bg-cyan-500/20 text-cyan-200" : "border border-white/15 text-slate-300"}`}
+                  >
+                    {loc}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="flex flex-col gap-1 md:col-span-6">
+              <div className="flex items-center justify-between">
+                <label className="text-xs text-slate-300">Nationality *</label>
+                <button type="button" onClick={() => setNationalityOpen((prev) => !prev)} className="glass-button rounded-[10px] px-3 py-1 text-xs">
+                  {nationalityOpen ? "Open" : "Select"}
+                </button>
+              </div>
+              {nationalityOpen ? (
+                <div
+                  className="hiring-chip-grid grid grid-cols-4 gap-1 rounded-[10px] border border-white/10 bg-black/20 p-1.5"
+                  role="group"
+                  aria-label="Nationality open to all listed"
+                >
+                  {ALL_NATIONALITIES.map((item) => (
+                    <div
+                      key={item}
+                      className={`hiring-loc-chip flex w-full items-center justify-center rounded-full text-center font-medium leading-tight whitespace-nowrap bg-cyan-500/20 text-cyan-200 ${
+                        selectedExample === "example1" ? "px-2 py-1 text-xs" : "px-1.5 py-0.5 text-[10px]"
+                      }`}
+                    >
+                      {item}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="hiring-chip-grid grid grid-cols-4 gap-1 rounded-[10px] border border-white/10 bg-black/20 p-1.5">
+                  {ALL_NATIONALITIES.map((item) => (
+                    <button
+                      key={item}
+                      type="button"
+                      onClick={() => setNationality((prev) => (prev.includes(item) ? prev.filter((v) => v !== item) : [...prev, item]))}
+                      className={`hiring-loc-chip w-full rounded-full px-1.5 py-0.5 text-center text-[10px] font-medium leading-tight whitespace-nowrap ${nationality.includes(item) ? "bg-cyan-500/20 text-cyan-200" : "border border-white/15 text-slate-300"}`}
+                    >
+                      {item}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+            <div className="flex flex-col gap-1 md:col-span-6">
+              <label className="text-xs text-slate-300">Monthly Salary *</label>
+              <input type="number" value={monthlySalary} onChange={(e) => setMonthlySalary(Number(e.target.value || 0))} className="glass-input h-10 px-3 text-sm" />
+            </div>
+            <div className="flex flex-col gap-1 md:col-span-6">
+              <label className="text-xs text-slate-300">Currency *</label>
+              <select value={currency} onChange={(e) => setCurrency(e.target.value as "MYR" | "USD" | "SGD" | "INR")} className="glass-input h-10 bg-[#0f172a] px-3 text-sm text-white">
+                <option value="MYR">MYR</option>
+                <option value="USD">USD</option>
+                <option value="SGD">SGD</option>
+                <option value="INR">INR</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="text-xs font-semibold uppercase tracking-[0.12em] text-cyan-300">Section B: Candidate Profile</div>
+          <div className="grid gap-2 md:grid-cols-12">
+            <div className="space-y-1 md:col-span-7">
+              <label className="text-xs text-slate-300">Years Experience * ({yearsMin} - {yearsMax})</label>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="flex items-center gap-2 rounded-[10px] border border-white/10 bg-black/20 px-2 py-1.5">
+                  <span className="text-[11px] text-slate-400">Min</span>
+                  <input
+                    type="number"
+                    min={0}
+                    max={20}
+                    value={yearsMin}
+                    onChange={(e) => setYearsMin(Number(e.target.value || 0))}
+                    className="glass-input h-8 w-full px-2 text-xs"
+                  />
+                </div>
+                <div className="flex items-center gap-2 rounded-[10px] border border-white/10 bg-black/20 px-2 py-1.5">
+                  <span className="text-[11px] text-slate-400">Max</span>
+                  <input
+                    type="number"
+                    min={0}
+                    max={20}
+                    value={yearsMax}
+                    onChange={(e) => setYearsMax(Number(e.target.value || 0))}
+                    className="glass-input h-8 w-full px-2 text-xs"
+                  />
+                </div>
+              </div>
+            </div>
+            <div className="flex flex-col gap-1 md:col-span-5">
+              <label className="text-xs text-slate-300">Notice Period</label>
+              <select value={noticePeriod} onChange={(e) => setNoticePeriod(e.target.value)} className="glass-input h-10 bg-[#0f172a] px-3 text-sm text-white">
+                <option>Immediate</option>
+                <option>30 days</option>
+                <option>60 days</option>
+                <option>90 days</option>
+              </select>
+            </div>
+            <div className="flex flex-col gap-1 md:col-span-12">
+              <label className="text-xs text-slate-300">Must Have Skills *</label>
+              <input value={mustHaveSkills} onChange={(e) => setMustHaveSkills(e.target.value)} className="glass-input h-10 px-3 text-sm" />
+            </div>
+          </div>
+
+          <div className="text-xs font-semibold uppercase tracking-[0.12em] text-cyan-300">Section C: Constraints</div>
+          <div className="grid gap-3 md:grid-cols-2">
+            <div className="flex flex-col gap-2">
+              <label className="text-sm">Exclude Keywords</label>
+              <input value={excludeKeywords} onChange={(e) => setExcludeKeywords(e.target.value)} className="glass-input h-11 px-3" placeholder="Intern, Junior, QA" />
+            </div>
+            <div className="flex flex-col gap-2">
+              <label className="text-sm">Constraints</label>
+              <div className="flex flex-col gap-2 rounded-[12px] border border-white/10 bg-black/20 p-3">
+                {CONSTRAINT_OPTIONS.map((item) => (
+                  <label key={item} className="flex items-center gap-2 text-xs text-slate-300">
+                    <input
+                      type="checkbox"
+                      checked={constraints.includes(item)}
+                      onChange={() =>
+                        setConstraints((prev) => (prev.includes(item) ? prev.filter((v) => v !== item) : [...prev, item]))
+                      }
+                    />
+                    {item}
+                  </label>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-semibold uppercase tracking-[0.12em] text-cyan-300" htmlFor="hiring-output-type">
+              Section D: Output Mode
+            </label>
+            <div className="flex gap-2">
+              <select
+                id="hiring-output-type"
+                value={outputType}
+                onChange={(e) => setOutputType(e.target.value as OutputType)}
+                className="glass-input h-10 min-w-0 flex-1 bg-[#0f172a] px-3 text-sm text-white"
+              >
+                {(["Full Playbook", "Sourcing Strings Only", "Channel Plan Only", "Foundit Boolean"] as OutputType[]).map((item) => (
+                  <option key={item} value={item}>
+                    {item}
+                  </option>
+                ))}
+              </select>
+              <button
+                type="button"
+                onClick={generate}
+                className="flex h-10 min-w-[8.5rem] shrink-0 items-center justify-center rounded-lg bg-cyan-500 px-4 text-sm font-bold text-black transition-all hover:bg-cyan-400"
+              >
+                Execute
+              </button>
+            </div>
+          </div>
+
+          {showContractMalaysiaWarning ? (
+            <div className="rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-400">
+              Contract + Malaysia: JobStreet database access is restricted (posting only).
+            </div>
+          ) : null}
+
+          <div className="flex flex-wrap gap-2">
+            <span className="text-xs text-slate-500">Examples:</span>
+            <button type="button" onClick={() => applyExample("example1")} className={`rounded-full px-3 py-1 text-xs ${selectedExample === "example1" ? "bg-violet-500/20 text-violet-200" : "border border-white/15 text-slate-300"}`}>Example 1</button>
+            <button type="button" onClick={() => applyExample("example2")} className={`rounded-full px-3 py-1 text-xs ${selectedExample === "example2" ? "bg-violet-500/20 text-violet-200" : "border border-white/15 text-slate-300"}`}>Example 2</button>
+          </div>
+    </div>
+  );
+
+  const yamlBlock =
+    showYaml ? (
+        <div className="surface-card p-4">
+          <div className="mb-2 flex items-center justify-between">
+            <h4 className="text-xs font-semibold uppercase tracking-[0.12em] text-cyan-300">YAML Preview</h4>
+            <button type="button" onClick={() => copyText(yamlText, "YAML copied")} className="glass-button rounded-[8px] px-3 py-1 text-xs">Copy</button>
+          </div>
+          <pre className="max-h-72 overflow-auto whitespace-pre-wrap rounded-[10px] border border-white/10 bg-black/30 p-3 text-xs text-slate-300">{yamlText}</pre>
+        </div>
+      ) : null;
+
+  const historyBlock =
+    showHistory ? (
+        <div className="surface-card p-4">
+          <div className="mb-3 flex items-center justify-between">
+            <h4 className="text-xs font-semibold uppercase tracking-[0.12em] text-cyan-300">History (Last 10)</h4>
+          </div>
+          <div className="space-y-2">
+            {history.length === 0 ? (
+              <div className="text-sm text-slate-400">No history yet.</div>
+            ) : (
+              history.map((item) => (
+                <div key={item.id} className="flex flex-wrap items-center justify-between gap-2 rounded-[10px] border border-white/10 bg-black/20 px-3 py-2">
+                  <div className="text-xs text-slate-200">
+                    <div className="font-semibold">{item.role}</div>
+                    <div className="text-slate-400">{item.outputType} · {new Date(item.generatedAt).toLocaleString()}</div>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setRawOutput(item.rawOutput);
+                        setPlaybookGeneratedAt(item.generatedAt);
+                        setHistoryViewRole(item.role);
+                        setHistoryViewOutputType(item.outputType);
+                        setStatus("success");
+                        setStatusMessage("Loaded from history.");
+                      }}
+                      className="glass-button rounded-[8px] px-3 py-1 text-xs"
+                    >
+                      View
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setHistory((prev) => prev.filter((entry) => entry.id !== item.id))}
+                      className="glass-button rounded-[8px] px-3 py-1 text-xs text-red-300"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      ) : null;
+
+  const playbookOutput = (
+    <>
+      {showNoLinkedinAdsWarning ? (
+        <div className="mb-3 rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-400">
+          Malaysian-only technical role: no LinkedIn job ads; use LinkedIn Recruiter Lite for sourcing only.
+        </div>
+      ) : null}
+      <div className="min-h-0 flex-1 overflow-hidden">
+        <OutputPanel
+          rawOutput={rawOutput}
+          role={panelRole}
+          outputType={panelOutputType}
+          generatedAt={panelGeneratedAtLabel}
+          status={status}
+          statusMessage={statusMessage}
+        />
+      </div>
+    </>
+  );
+
+  const hiringSplitGrid = (
+    <section
+      ref={hiringGridRef}
+      className="grid min-h-0 flex-1 gap-0 self-stretch"
+      style={{ gridTemplateColumns: `calc(${dividerX}% - 1cm) 18px 1fr` }}
+    >
+      <div className="opal-split-panel min-h-0 overflow-y-auto">{intakeForm}</div>
+      <div
+        aria-hidden="true"
+        className="relative flex w-full cursor-col-resize select-none items-center justify-center"
+        onMouseDown={(e) => {
+          e.preventDefault();
+          setDragging(true);
+        }}
+      >
+        <div className="opal-resize-handle rounded-[2px]" data-active={dragging ? "true" : undefined} />
+      </div>
+      <div className="opal-split-panel opal-split-panel--tall flex min-h-0 flex-col overflow-hidden">
+        {playbookOutput}
+      </div>
+    </section>
+  );
+
+  return (
+    <section
+      className={`hiring-strategy-tab flex min-h-0 flex-1 flex-col gap-4 ${isStandalone ? "w-full min-h-0 flex-1 overflow-hidden" : ""}`}
+    >
+      <div className="flex min-h-0 flex-1 flex-col self-stretch">
+        {hiringSplitGrid}
+      </div>
+      {yamlBlock}
+      {historyBlock}
+      {showHelp ? (
+        <div className="fixed inset-0 z-50 grid place-items-center bg-black/70 p-4">
+          <div className="w-full max-w-xl rounded-[16px] border border-white/15 bg-[#0f172a] p-5">
+            <div className="mb-3 flex items-center justify-between">
+              <h4 className="text-sm font-semibold text-cyan-300">Oxy Hiring — Available Triggers</h4>
+              <button type="button" onClick={() => setShowHelp(false)} className="glass-button rounded-[8px] px-3 py-1 text-xs">Close</button>
+            </div>
+            <div className="space-y-1 text-sm text-slate-300">
+              <div>1. /sourcing → Multi-platform sourcing strategy</div>
+              <div>2. /playbook → Full hiring execution plan</div>
+              <div>3. /channel → Channel strategy only</div>
+              <div>4. /foundit → Foundit Boolean + filters</div>
+              <div>5. /guide → Complete recruiter guide</div>
+              <div>6. /example → 2 YAML examples</div>
+            </div>
+            <div className="mt-3 rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-300">
+              Notes: Manatal-first always applies. Owned tools prioritized before paid. YAML is source of truth.
+            </div>
+          </div>
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
+function AlertsTab() {
+  return (
+    <section className="surface-card p-5">
+      <h2 className="text-[15px] font-bold uppercase tracking-[0.12em] text-cyan-300">Alerts</h2>
+      <p className="mt-3 max-w-xl text-sm text-slate-400">
+        Notification center for hiring events, SLA breaches, and pipeline changes. Connect webhooks or email digests
+        here when ready.
+      </p>
+    </section>
+  );
+}
+
+function AnalyticsTab() {
+  return (
+    <section className="surface-card p-5">
+      <h2 className="text-[15px] font-bold uppercase tracking-[0.12em] text-cyan-300">Analytics</h2>
+      <p className="mt-3 max-w-xl text-sm text-slate-400">
+        Dashboards for funnel conversion, time-to-hire, and source effectiveness. Wire charts and data sources here when
+        ready.
+      </p>
+    </section>
+  );
+}
+
+const ATS_NAME_OPTIONS = ["Workday", "Manatal", "Greenhouse", "Workable", "Deel", "Breezy HR"] as const;
+
 function SetupTab() {
   const [openAiKey, setOpenAiKey] = useState("********************");
-  const [manatalApiKey, setManatalApiKey] = useState("********************");
-  const [airtableName, setAirtableName] = useState("Master AI Screener v2");
+  const [atsName, setAtsName] = useState<string>("Manatal");
+  const [atsApiKey, setAtsApiKey] = useState("********************");
+  const [tableName, setTableName] = useState("Master AI Screener v2");
   const [defaultPipelineStage, setDefaultPipelineStage] = useState("New Candidates");
   const [tier1Threshold, setTier1Threshold] = useState("65");
   const [tier2Threshold, setTier2Threshold] = useState("80");
-  const [autoUploadToManatal, setAutoUploadToManatal] = useState(true);
-  const [autoSyncAirtable, setAutoSyncAirtable] = useState(true);
+  const [autoUploadToAts, setAutoUploadToAts] = useState(true);
+  const [autoSyncToDatabase, setAutoSyncToDatabase] = useState(true);
   const [emailAlerts, setEmailAlerts] = useState(false);
   const [statusBanner, setStatusBanner] = useState("All systems operational");
   const [lastSavedAt, setLastSavedAt] = useState("31 Mar 2026, 10:42 AM");
@@ -1765,7 +2623,7 @@ function SetupTab() {
   };
 
   const testConnections = () => {
-    setStatusBanner("Connection test passed for OpenAI, Manatal, and Airtable");
+    setStatusBanner("Connection test passed for OpenAI, ATS, and Database");
   };
 
   const toggleClass = (enabled: boolean) =>
@@ -1794,16 +2652,33 @@ function SetupTab() {
             <input value={openAiKey} onChange={(e) => setOpenAiKey(e.target.value)} className="glass-input h-11 w-full px-3" placeholder="Enter API key" />
           </div>
           <div className="flex flex-col gap-2">
-            <label className="text-sm text-slate-300">Manatal API Key</label>
-            <input value={manatalApiKey} onChange={(e) => setManatalApiKey(e.target.value)} className="glass-input h-11 w-full px-3" placeholder="Enter Manatal key" />
+            <label className="text-sm text-slate-300">ATS Name</label>
+            <select value={atsName} onChange={(e) => setAtsName(e.target.value)} className="glass-input h-11 w-full bg-[#0f172a] px-3 text-white">
+              {ATS_NAME_OPTIONS.map((name) => (
+                <option key={name} value={name}>
+                  {name}
+                </option>
+              ))}
+            </select>
           </div>
           <div className="flex flex-col gap-2">
-            <label className="text-sm text-slate-300">Airtable Name</label>
-            <input value={airtableName} onChange={(e) => setAirtableName(e.target.value)} className="glass-input h-11 w-full px-3" placeholder="Enter Airtable name" />
+            <label className="text-sm text-slate-300">ATS API Key</label>
+            <input value={atsApiKey} onChange={(e) => setAtsApiKey(e.target.value)} className="glass-input h-11 w-full px-3" placeholder="Enter ATS API key" />
           </div>
           <div className="flex flex-col gap-2">
-            <label className="text-sm text-slate-300">Default Pipeline Stage</label>
-            <select value={defaultPipelineStage} onChange={(e) => setDefaultPipelineStage(e.target.value)} className="glass-input h-11 w-full bg-[#0f172a] px-3 text-white">
+            <label className="text-sm text-slate-300">Table Name</label>
+            <input value={tableName} onChange={(e) => setTableName(e.target.value)} className="glass-input h-11 w-full px-3" placeholder="Enter table name" />
+          </div>
+        </div>
+
+        <div className="mt-4 grid grid-cols-3 gap-3">
+          <div className="flex min-w-0 flex-col gap-2">
+            <label className="text-xs text-slate-300 sm:text-sm">Default Pipeline Stage</label>
+            <select
+              value={defaultPipelineStage}
+              onChange={(e) => setDefaultPipelineStage(e.target.value)}
+              className="glass-input h-10 w-full min-w-0 bg-[#0f172a] px-2 text-sm text-white sm:h-11 sm:px-3"
+            >
               <option>New Candidates</option>
               <option>Shortlisted</option>
               <option>Interview</option>
@@ -1811,33 +2686,47 @@ function SetupTab() {
               <option>Placed</option>
             </select>
           </div>
-          <div className="flex flex-col gap-2">
-            <label className="text-sm text-slate-300">Tier 1 Pass Threshold (%)</label>
-            <input type="number" min={0} max={100} value={tier1Threshold} onChange={(e) => setTier1Threshold(e.target.value)} className="glass-input h-11 w-full px-3" />
+          <div className="flex min-w-0 flex-col gap-2">
+            <label className="text-xs text-slate-300 sm:text-sm">Quick Score Pass Threshold (%)</label>
+            <input
+              type="number"
+              min={0}
+              max={100}
+              value={tier1Threshold}
+              onChange={(e) => setTier1Threshold(e.target.value)}
+              className="glass-input h-10 w-full min-w-0 px-2 text-sm sm:h-11 sm:px-3"
+            />
           </div>
-          <div className="flex flex-col gap-2">
-            <label className="text-sm text-slate-300">Tier 2 Pass Threshold (%)</label>
-            <input type="number" min={0} max={100} value={tier2Threshold} onChange={(e) => setTier2Threshold(e.target.value)} className="glass-input h-11 w-full px-3" />
+          <div className="flex min-w-0 flex-col gap-2">
+            <label className="text-xs text-slate-300 sm:text-sm">Final Score Pass Threshold (%)</label>
+            <input
+              type="number"
+              min={0}
+              max={100}
+              value={tier2Threshold}
+              onChange={(e) => setTier2Threshold(e.target.value)}
+              className="glass-input h-10 w-full min-w-0 px-2 text-sm sm:h-11 sm:px-3"
+            />
           </div>
         </div>
 
         <div className="mt-6 grid gap-3">
           <div className="panel-border flex items-center justify-between rounded-[16px] bg-white/[0.02] px-4 py-3">
             <div>
-              <div className="text-sm font-medium text-slate-100">Auto Upload to Manatal</div>
-              <div className="text-xs text-slate-400">Push uploaded candidates into Manatal automatically after validation.</div>
+              <div className="text-sm font-medium text-slate-100">Auto Upload to ATS</div>
+              <div className="text-xs text-slate-400">Push uploaded candidates into your ATS automatically after validation.</div>
             </div>
-            <button type="button" onClick={() => setAutoUploadToManatal((prev) => !prev)} className={toggleClass(autoUploadToManatal)}>
-              {autoUploadToManatal ? "Enabled" : "Disabled"}
+            <button type="button" onClick={() => setAutoUploadToAts((prev) => !prev)} className={toggleClass(autoUploadToAts)}>
+              {autoUploadToAts ? "Enabled" : "Disabled"}
             </button>
           </div>
           <div className="panel-border flex items-center justify-between rounded-[16px] bg-white/[0.02] px-4 py-3">
             <div>
-              <div className="text-sm font-medium text-slate-100">Auto Sync to Airtable</div>
-              <div className="text-xs text-slate-400">Mirror candidate scoring results into Airtable automatically.</div>
+              <div className="text-sm font-medium text-slate-100">Auto Sync to Database</div>
+              <div className="text-xs text-slate-400">Mirror candidate scoring results into the database automatically.</div>
             </div>
-            <button type="button" onClick={() => setAutoSyncAirtable((prev) => !prev)} className={toggleClass(autoSyncAirtable)}>
-              {autoSyncAirtable ? "Enabled" : "Disabled"}
+            <button type="button" onClick={() => setAutoSyncToDatabase((prev) => !prev)} className={toggleClass(autoSyncToDatabase)}>
+              {autoSyncToDatabase ? "Enabled" : "Disabled"}
             </button>
           </div>
           <div className="panel-border flex items-center justify-between rounded-[16px] bg-white/[0.02] px-4 py-3">
@@ -1875,7 +2764,7 @@ function SetupTab() {
             <div className="panel-border rounded-[16px] bg-white/[0.02] p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <div className="text-sm font-semibold text-slate-100">Manatal</div>
+                  <div className="text-sm font-semibold text-slate-100">ATS</div>
                   <div className="text-xs text-slate-400">Candidate sync and job lookup</div>
                 </div>
                 <span className="rounded-full bg-emerald-400/10 px-3 py-1 text-xs font-medium text-emerald-300">Connected</span>
@@ -1884,7 +2773,7 @@ function SetupTab() {
             <div className="panel-border rounded-[16px] bg-white/[0.02] p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <div className="text-sm font-semibold text-slate-100">Airtable</div>
+                  <div className="text-sm font-semibold text-slate-100">Database</div>
                   <div className="text-xs text-slate-400">Scoring result mirror and reporting</div>
                 </div>
                 <span className="rounded-full bg-amber-400/10 px-3 py-1 text-xs font-medium text-amber-300">Warning</span>
@@ -1901,11 +2790,11 @@ function SetupTab() {
               <div className="mt-1 text-xs text-slate-500">31 Mar 2026, 10:45 AM</div>
             </div>
             <div className="rounded-[14px] border border-white/10 bg-white/[0.02] px-4 py-3">
-              <div className="text-slate-100">Airtable connection test returned warning</div>
+              <div className="text-slate-100">Database connection test returned warning</div>
               <div className="mt-1 text-xs text-slate-500">31 Mar 2026, 10:43 AM</div>
             </div>
             <div className="rounded-[14px] border border-white/10 bg-white/[0.02] px-4 py-3">
-              <div className="text-slate-100">Auto upload to Manatal enabled</div>
+              <div className="text-slate-100">Auto upload to ATS enabled</div>
               <div className="mt-1 text-xs text-slate-500">31 Mar 2026, 10:41 AM</div>
             </div>
           </div>
@@ -1923,7 +2812,26 @@ function JobPostingTab() {
   const [isLoading, setIsLoading] = useState(false);
   const [isHelpOpen, setIsHelpOpen] = useState(false);
   const [dividerX, setDividerX] = useState(50);
-  const dividerRef = useRef<HTMLDivElement>(null);
+  const [dragging, setDragging] = useState(false);
+  const gridRef = useRef<HTMLElement | null>(null);
+
+  useEffect(() => {
+    if (!dragging) return;
+    const onMove = (e: MouseEvent) => {
+      const el = gridRef.current;
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      const pct = ((e.clientX - rect.left) / rect.width) * 100;
+      setDividerX(Math.max(22, Math.min(78, pct)));
+    };
+    const onUp = () => setDragging(false);
+    document.addEventListener("mousemove", onMove);
+    document.addEventListener("mouseup", onUp);
+    return () => {
+      document.removeEventListener("mousemove", onMove);
+      document.removeEventListener("mouseup", onUp);
+    };
+  }, [dragging]);
 
   const helpRows = [
     {
@@ -2192,127 +3100,125 @@ function JobPostingTab() {
   };
 
   return (
-    <section className="grid gap-0" style={{ gridTemplateColumns: `calc(${dividerX}% - 0.5cm) 1cm calc(${100 - dividerX}% - 0.5cm)` }}>
-      <div className="surface-card p-5">
-        <h2 className="mb-4 text-[15px] font-bold tracking-[0.12em] uppercase text-cyan-300">Job Posting</h2>
-        <SectionLabel>Job Description *</SectionLabel>
+    <>
+      <div className="flex min-h-0 flex-1 flex-col self-stretch">
+        <section
+          ref={gridRef}
+          className="grid min-h-0 flex-1 gap-0 self-stretch"
+          style={{ gridTemplateColumns: `calc(${dividerX}% - 1cm) 18px 1fr` }}
+        >
+          <div className="opal-split-panel min-h-0 overflow-y-auto">
+            <div className="mb-4">
+              <h2 className="opal-heading-panel">Job Posting</h2>
+            </div>
+            <SectionLabel>Job Description *</SectionLabel>
 
-        <textarea
-          value={jdText}
-          onChange={(e) => setJdText(e.target.value)}
-          placeholder="Paste job description here..."
-          required
-          aria-required="true"
-          className="glass-input mt-3 h-[446px] w-full resize-none px-4 py-4"
-        />
+            <textarea
+              value={jdText}
+              onChange={(e) => setJdText(e.target.value)}
+              placeholder="Paste job description here..."
+              required
+              aria-required="true"
+              className="glass-input mt-3 h-[446px] w-full resize-none px-4 py-4"
+            />
 
-        <div className="mt-4 grid grid-cols-4 gap-2">
-          {commandButtons.map((button) => {
-            const isActive = activeCommand === button.command;
+            <div className="mt-4 grid grid-cols-4 gap-2">
+              {commandButtons.map((button) => {
+                const isActive = activeCommand === button.command;
 
-            return (
-            <button
-              type="button"
-              key={button.command}
-              onClick={() => setCommandInput(button.command)}
-              data-active={isActive}
-              className="command-button group relative glass-button min-h-11 rounded-[8px] px-4 py-2 text-left text-[12px] font-semibold tracking-[0.02em] text-slate-300"
-            >
-              <span className={isActive ? "drop-shadow-[0_0_8px_rgba(6,182,212,0.6)] text-cyan-400" : ""}>
-                <span className="text-[18px]">{button.emoji}</span>{" "}
-                {button.label}
-              </span>
-              <span className="pointer-events-none absolute -top-11 left-1/2 z-20 hidden w-max max-w-[240px] -translate-x-1/2 rounded-md border border-cyan-400/35 bg-slate-950/95 px-3 py-2 text-center text-[11px] font-medium normal-case leading-4 text-slate-100 shadow-[0_8px_30px_rgba(0,0,0,0.45)] group-hover:block group-focus-visible:block">
-                {button.tooltip}
-              </span>
-            </button>
-            );
-          })}
-        </div>
+                return (
+                  <button
+                    type="button"
+                    key={button.command}
+                    onClick={() => setCommandInput(button.command)}
+                    data-active={isActive}
+                    className="command-button group relative glass-button min-h-11 rounded-[8px] px-4 py-2 text-left text-[12px] font-semibold tracking-[0.02em] opal-text-muted"
+                  >
+                    <span className={isActive ? "drop-shadow-[0_0_8px_rgba(6,182,212,0.6)] text-cyan-400" : ""}>
+                      <span className="text-[18px]">{button.emoji}</span>{" "}
+                      {button.label}
+                    </span>
+                    <span className="opal-tooltip pointer-events-none absolute -top-11 left-1/2 z-20 hidden w-max max-w-[240px] -translate-x-1/2 rounded-md px-3 py-2 text-center text-[11px] font-medium normal-case leading-4 group-hover:block group-focus-visible:block">
+                      {button.tooltip}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
 
-        <div className="mt-3 grid grid-cols-4 gap-2">
-          <button type="button" onClick={executeCommand} className="primary-button col-span-3 min-h-11 rounded-lg px-10 py-2">
-            Execute
-          </button>
-          <button type="button" onClick={clearAll} className="glass-button min-h-11 rounded-lg px-6 py-2">
-            Clear
-          </button>
-        </div>
+            <div className="mt-3 grid grid-cols-4 gap-2">
+              <button type="button" onClick={executeCommand} className="primary-button col-span-3 min-h-11 rounded-lg px-10 py-2">
+                Execute
+              </button>
+              <button type="button" onClick={clearAll} className="glass-button min-h-11 rounded-lg px-6 py-2">
+                Clear
+              </button>
+            </div>
 
-        {errorMessage ? <div className="mt-3 text-sm text-rose-300">{errorMessage}</div> : null}
-        {isLoading ? <div className="mt-3 text-sm text-slate-300">Running...</div> : null}
-      </div>
-
-      <div
-        ref={dividerRef}
-        onMouseDown={() => {
-          const handleMouseMove = (e: MouseEvent) => {
-            if (!dividerRef.current) return;
-            const parent = dividerRef.current.parentElement;
-            if (!parent) return;
-            const rect = parent.getBoundingClientRect();
-            const newX = ((e.clientX - rect.left) / rect.width) * 100;
-            setDividerX(Math.max(30, Math.min(75, newX)));
-          };
-
-          const handleMouseUp = () => {
-            document.removeEventListener("mousemove", handleMouseMove);
-            document.removeEventListener("mouseup", handleMouseUp);
-          };
-
-          document.addEventListener("mousemove", handleMouseMove);
-          document.addEventListener("mouseup", handleMouseUp);
-        }}
-        className="bg-white/20 hover:bg-cyan-400/60 cursor-col-resize transition-colors backdrop-blur-sm border-l border-r border-white/30 w-2 flex items-center justify-center"
-      >
-        <div className="w-0.5 h-8 bg-cyan-400/40 rounded-full" />
-      </div>
-
-      <div className="surface-card flex min-h-[620px] flex-col p-5">
-        <div className="mb-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <span className="h-2.5 w-2.5 rounded-full bg-cyan-400 shadow-[0_0_12px_rgba(6,182,212,0.6)]" />
-            <span className="text-[12px] font-semibold uppercase tracking-[0.12em] text-slate-300">Output</span>
+            {errorMessage ? <div className="mt-3 text-sm text-rose-300">{errorMessage}</div> : null}
+            {isLoading ? <div className="mt-3 text-sm text-[var(--muted)]">Running...</div> : null}
           </div>
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => {
-                if (!outputText) return;
-                const blob = new Blob([outputText], { type: "text/plain" });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement("a");
-                a.href = url;
-                a.download = "job-posting.txt";
-                a.click();
-                URL.revokeObjectURL(url);
-              }}
-              className="glass-button rounded-lg px-3 py-1.5 text-xs"
-            >
-              Download
-            </button>
-            <button
-              type="button"
-              onClick={() => setIsHelpOpen(true)}
-              className="glass-button rounded-lg px-3 py-1.5 text-xs"
-            >
-              Help
-            </button>
-          </div>
-        </div>
 
-        <div className="panel-border flex min-h-[612px] flex-1 rounded-[16px] bg-white/[0.02] p-6">
-          <div className="w-full text-sm text-slate-200 whitespace-pre-wrap">{outputText || "Output will appear here."}</div>
-        </div>
+          <div
+            aria-hidden="true"
+            className="relative flex w-full cursor-col-resize select-none items-center justify-center"
+            onMouseDown={(e) => {
+              e.preventDefault();
+              setDragging(true);
+            }}
+          >
+            <div className="opal-resize-handle rounded-[2px]" data-active={dragging ? "true" : undefined} />
+          </div>
+
+          <div className="opal-split-panel opal-split-panel--tall flex min-h-0 flex-col">
+            <div className="mb-4 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <span className="h-2.5 w-2.5 rounded-full bg-cyan-400 shadow-[0_0_12px_rgba(6,182,212,0.6)]" />
+                <span className="opal-heading-panel">Output</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!outputText) return;
+                    const blob = new Blob([outputText], { type: "text/plain" });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement("a");
+                    a.href = url;
+                    a.download = "job-posting.txt";
+                    a.click();
+                    URL.revokeObjectURL(url);
+                  }}
+                  className="glass-button rounded-lg px-3 py-1.5 text-xs"
+                >
+                  Download
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsHelpOpen(true)}
+                  className="glass-button rounded-lg px-3 py-1.5 text-xs"
+                >
+                  Help
+                </button>
+              </div>
+            </div>
+
+            <div className="opal-split-inner">
+              <div className="opal-split-inner-output">
+                {outputText || "Output will appear here."}
+              </div>
+            </div>
+          </div>
+        </section>
       </div>
 
       {isHelpOpen ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-4xl rounded-[20px] border border-white/15 bg-slate-950/95 p-5 shadow-2xl">
+        <div className="opal-modal-overlay fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+          <div className="opal-modal w-full max-w-4xl rounded-[20px] p-5">
             <div className="mb-4 flex items-center justify-between gap-4">
               <div>
-                <h3 className="text-lg font-semibold text-slate-100">Job Posting Commands</h3>
-                <p className="mt-1 text-sm text-slate-400">Available actions for the Job Posting bot.</p>
+                <h3 className="text-lg font-semibold opal-text-body">Job Posting Commands</h3>
+                <p className="mt-1 text-sm opal-text-muted">Available actions for the Job Posting bot.</p>
               </div>
               <button
                 type="button"
@@ -2323,9 +3229,9 @@ function JobPostingTab() {
               </button>
             </div>
 
-            <div className="overflow-x-auto rounded-[16px] border border-white/10 bg-white/[0.03]">
-              <table className="w-full min-w-[720px] text-left text-sm text-slate-200">
-                <thead className="bg-white/[0.04] text-[11px] uppercase tracking-[0.12em] text-slate-400">
+            <div className="overflow-x-auto rounded-[16px] border opal-border-subtle bg-[var(--card)]">
+              <table className="w-full min-w-[720px] text-left text-sm opal-text-body">
+                <thead className="bg-[var(--card)] text-[11px] uppercase tracking-[0.12em] opal-text-muted">
                   <tr>
                     <th className="px-4 py-3">Command</th>
                     <th className="px-4 py-3">What it does</th>
@@ -2333,9 +3239,9 @@ function JobPostingTab() {
                 </thead>
                 <tbody>
                   {helpRows.map((row) => (
-                    <tr key={row.command} className="border-t border-white/10 align-top">
+                    <tr key={row.command} className="border-t opal-border-subtle align-top">
                       <td className="px-4 py-3 font-mono text-cyan-300">{row.command}</td>
-                      <td className="px-4 py-3 text-slate-300">{row.description}</td>
+                      <td className="px-4 py-3 opal-text-muted">{row.description}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -2344,7 +3250,7 @@ function JobPostingTab() {
           </div>
         </div>
       ) : null}
-    </section>
+    </>
   );
 }
 
@@ -2355,7 +3261,7 @@ function SectionLabel({
   children: React.ReactNode;
   className?: string;
 }) {
-  return <div className={`text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-300 ${className}`}>{children}</div>;
+  return <div className={`opal-section-label ${className}`}>{children}</div>;
 }
 
 function StatusBox({
@@ -2389,15 +3295,27 @@ function DetailPill({ label, value }: { label: string; value: string }) {
 function EmptyState({
   title,
   subtitle,
-  icon
+  icon,
+  className = "",
+  iconClassName = ""
 }: {
   title: string;
   subtitle: string;
   icon: React.ReactNode;
+  className?: string;
+  iconClassName?: string;
 }) {
   return (
-    <div className="mx-auto flex max-w-[320px] flex-col items-center justify-center text-center">
-      <div className="grid h-14 w-14 place-items-center rounded-[16px] bg-white/[0.04] text-cyan-400">{icon}</div>
+    <div className={`mx-auto flex max-w-[320px] flex-col items-center justify-center text-center ${className}`}>
+      <div
+        className={
+          iconClassName
+            ? `grid h-14 w-14 place-items-center rounded-[16px] ${iconClassName}`
+            : "grid h-14 w-14 place-items-center rounded-[16px] bg-white/[0.04] text-cyan-400"
+        }
+      >
+        {icon}
+      </div>
       <h3 className="mt-4 text-[16px] font-semibold text-slate-100">{title}</h3>
       <p className="mt-2 text-[13px] leading-6 text-slate-500">{subtitle}</p>
     </div>
