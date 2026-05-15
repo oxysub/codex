@@ -1,0 +1,450 @@
+@import "tailwindcss";
+
+:root {
+  color-scheme: dark;
+  --bg: #0a0a0a;
+  --surface: rgba(255, 255, 255, 0.04);
+  --surface-strong: rgba(255, 255, 255, 0.06);
+  --accent: #06b6d4;
+  --accent-soft: rgba(6, 182, 212, 0.15);
+  --accent-border: rgba(6, 182, 212, 0.4);
+  --text-primary: #f1f5f9;
+  --text-secondary: #cbd5e1;
+  --text-muted: #64748b;
+  --text-placeholder: #2d3f52;
+  --border: rgba(255, 255, 255, 0.1);
+  --border-emphasis: rgba(255, 255, 255, 0.18);
+  --shadow-deep: 0 24px 60px rgba(0, 0, 0, 0.42);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  background:
+    radial-gradient(circle at top, rgba(6, 182, 212, 0.1), transparent 28%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent 18%),
+    var(--bg);
+  color: var(--text-primary);
+  font-family:
+    "SF Pro Display",
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    system-ui,
+    sans-serif;
+}
+
+button,
+input,
+textarea {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+.panel-border {
+  border: 0.5px solid var(--border);
+}
+
+.surface-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 0.5px solid rgba(255, 255, 255, 0.09);
+  border-radius: 16px;
+  box-shadow: var(--shadow-deep);
+}
+
+.glass-input {
+  border: 0.5px solid var(--border);
+  border-radius: 10px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.03));
+  color: var(--text-primary);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  transition: all 0.2s ease;
+}
+
+.glass-input::placeholder {
+  color: var(--text-placeholder);
+}
+
+.glass-input:focus {
+  outline: none;
+  border-color: rgba(6, 182, 212, 0.45);
+  box-shadow:
+    0 0 0 1px rgba(6, 182, 212, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.glass-button {
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-top-color: rgba(255, 255, 255, 0.32);
+  border-bottom-color: rgba(255, 255, 255, 0.06);
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.13) 0%, rgba(255, 255, 255, 0.04) 60%, rgba(255, 255, 255, 0.09) 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.15),
+    0 2px 8px rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(6px);
+  color: #94a3b8;
+  transition: all 0.2s ease;
+}
+
+.glass-button:hover {
+  background: linear-gradient(160deg, rgba(220, 38, 38, 0.28) 0%, rgba(185, 28, 28, 0.08) 60%, rgba(220, 38, 38, 0.18) 100%);
+  border-color: rgba(220, 38, 38, 0.6);
+  border-top-color: rgba(220, 38, 38, 0.9);
+  border-bottom-color: rgba(220, 38, 38, 0.3);
+  box-shadow:
+    inset 0 1px 0 rgba(220, 38, 38, 0.35),
+    0 2px 12px rgba(220, 38, 38, 0.2);
+  color: #f87171;
+}
+
+.glass-button:disabled,
+.command-button:disabled,
+.primary-button:disabled,
+.outline-cyan-button:disabled {
+  opacity: 0.32;
+  pointer-events: none;
+}
+
+.primary-button {
+  border: 1px solid rgba(6, 182, 212, 0.9);
+  border-top-color: rgba(255, 255, 255, 0.3);
+  border-bottom-color: rgba(6, 182, 212, 0.4);
+  background: linear-gradient(160deg, rgba(6, 182, 212, 0.96) 0%, rgba(6, 182, 212, 0.74) 100%);
+  color: #0a0a0a;
+  font-weight: 700;
+  box-shadow:
+    0 4px 24px rgba(6, 182, 212, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  transition: all 0.2s ease;
+}
+
+.primary-button:hover {
+  filter: brightness(1.08);
+  transform: translateY(-1px);
+}
+
+.primary-button:active {
+  transform: scale(0.98);
+}
+
+.outline-cyan-button,
+.command-button[data-active="true"] {
+  background: linear-gradient(160deg, rgba(6, 182, 212, 0.28) 0%, rgba(6, 182, 212, 0.08) 60%, rgba(6, 182, 212, 0.18) 100%);
+  border: 1px solid rgba(6, 182, 212, 0.6);
+  border-top-color: rgba(6, 182, 212, 0.9);
+  border-bottom-color: rgba(6, 182, 212, 0.3);
+  color: var(--accent);
+  box-shadow:
+    inset 0 1px 0 rgba(6, 182, 212, 0.2),
+    0 2px 12px rgba(6, 182, 212, 0.2);
+}
+
+.command-button {
+  border-radius: 8px;
+}
+
+.tab-button[data-active="true"] {
+  background: rgba(6, 182, 212, 0.15);
+  border-color: rgba(6, 182, 212, 0.4);
+  color: var(--accent);
+}
+
+.tab-button[data-active="false"]:hover {
+  background: rgba(255, 255, 255, 0.09);
+  color: #94a3b8;
+}
+
+.status-loading {
+  background: rgba(6, 182, 212, 0.08);
+  border-color: rgba(6, 182, 212, 0.25);
+  color: var(--accent);
+}
+
+.status-success {
+  background: rgba(5, 150, 105, 0.12);
+  border-color: rgba(5, 150, 105, 0.35);
+  color: #34d399;
+}
+
+.status-error {
+  background: rgba(220, 38, 38, 0.12);
+  border-color: rgba(220, 38, 38, 0.35);
+  color: #f87171;
+}
+
+.word-preview-page h1,
+.word-preview-page h2,
+.word-preview-page h3 {
+  color: #1a3c5e;
+  margin: 0 0 10px;
+}
+
+.word-preview-page p,
+.word-preview-page li {
+  color: #1f2937;
+  margin: 0 0 10px;
+  line-height: 1.55;
+}
+
+/* Login: thin recessed divider (mockup) */
+.login-bevel-line {
+  margin-top: 1.15rem;
+  margin-bottom: 0.85rem;
+  margin-left: auto;
+  margin-right: auto;
+  width: 100%;
+  height: 2px;
+  border-radius: 999px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(148, 163, 184, 0.35) 20%,
+    rgba(148, 163, 184, 0.55) 50%,
+    rgba(148, 163, 184, 0.35) 80%,
+    transparent
+  );
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.07),
+    inset 0 1px 1px rgba(0, 0, 0, 0.35);
+}
+
+/* Slightly stronger cyan glow on login pill only */
+.login-mockup-login-btn {
+  box-shadow:
+    0 4px 28px rgba(6, 182, 212, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+
+/*
+ * Login screen: plain CSS fallbacks so layout & theme survive if Tailwind
+ * utilities fail to generate/load (fixes unstyled white page + huge SVG).
+ */
+.login-page {
+  min-height: 100vh;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  padding: 1.5rem;
+  background: #0b0e11;
+  color: #e2e8f0;
+  font-family:
+    system-ui,
+    -apple-system,
+    "Segoe UI",
+    Roboto,
+    sans-serif;
+}
+
+.login-page__card {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 420px;
+  padding: 2rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(18, 22, 28, 0.95);
+  box-shadow: 0 25px 80px rgba(0, 0, 0, 0.55);
+}
+
+.login-page__header {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.login-page__oxy-logo {
+  display: block;
+  height: 1.75rem;
+  width: auto;
+  max-height: 1.75rem;
+  object-fit: contain;
+  object-position: left center;
+}
+
+@media (min-width: 640px) {
+  .login-page__oxy-logo {
+    height: 1.875rem;
+    max-height: 1.875rem;
+  }
+}
+
+.login-page__opal-lockup {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.login-page__opal-icon {
+  display: block;
+  width: 2.25rem;
+  height: 2.25rem;
+  flex-shrink: 0;
+  filter: drop-shadow(0 0 14px rgba(153, 246, 228, 0.55));
+}
+
+@media (min-width: 640px) {
+  .login-page__opal-icon {
+    width: 2.5rem;
+    height: 2.5rem;
+  }
+}
+
+.login-page__opal-title {
+  margin: 0;
+  font-size: 1.35rem;
+  line-height: 1;
+  font-weight: 800;
+  letter-spacing: 0.2em;
+  text-align: right;
+  background: linear-gradient(to right, #99f6e4, #5eead4, #22d3ee);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+@media (min-width: 640px) {
+  .login-page__opal-title {
+    font-size: 1.65rem;
+  }
+}
+
+.login-page__block {
+  margin-bottom: 1.5rem;
+}
+
+.login-page__sub {
+  margin: 0;
+  text-align: center;
+  font-size: 0.875rem;
+  line-height: 1.4;
+  color: #94a3b8;
+}
+
+.login-page__form {
+  display: block;
+  margin: 0;
+  padding: 0;
+  border: none;
+}
+
+.login-page__field {
+  margin-bottom: 1rem;
+}
+
+.login-page__field--spaced {
+  margin-bottom: 1.5rem;
+}
+
+.login-page__label {
+  display: block;
+  margin-bottom: 0.25rem;
+  font-size: 0.875rem;
+  color: #e2e8f0;
+}
+
+.login-page__input {
+  box-sizing: border-box;
+  display: block;
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border-radius: 10px;
+  border: 0.5px solid rgba(255, 255, 255, 0.1);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.03));
+  color: #f1f5f9;
+  font: inherit;
+}
+
+.login-page__input:focus {
+  outline: none;
+  border-color: rgba(6, 182, 212, 0.45);
+}
+
+.login-page__btn {
+  box-sizing: border-box;
+  display: block;
+  width: 100%;
+  margin: 0;
+  padding: 0.75rem 1rem;
+  border-radius: 9999px;
+  border: 1px solid rgba(6, 182, 212, 0.9);
+  border-top-color: rgba(255, 255, 255, 0.3);
+  border-bottom-color: rgba(6, 182, 212, 0.4);
+  background: linear-gradient(160deg, rgba(6, 182, 212, 0.96), rgba(6, 182, 212, 0.74));
+  color: #0a0a0a;
+  font-weight: 700;
+  font-size: 15px;
+  cursor: pointer;
+  box-shadow:
+    0 4px 28px rgba(6, 182, 212, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+
+.login-page__btn:hover {
+  filter: brightness(1.06);
+}
+
+.login-page__btn:active {
+  transform: scale(0.98);
+}
+
+.login-page__error {
+  margin: 0 0 0.75rem;
+  text-align: center;
+  font-size: 0.75rem;
+  color: #f87171;
+}
+
+.login-page__hint {
+  margin: 0.75rem 0 0;
+  text-align: center;
+  font-size: 0.75rem;
+  line-height: 1.45;
+  color: #94a3b8;
+}
+
+/* CV Formatter output — indeterminate progress while backend converts */
+.cv-format-progress-track {
+  height: 6px;
+  width: 100%;
+  max-width: 22rem;
+  margin-left: auto;
+  margin-right: auto;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+}
+
+.cv-format-progress-bar {
+  height: 100%;
+  width: 45%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(6, 182, 212, 0.15), #22d3ee, rgba(6, 182, 212, 0.15));
+  box-shadow: 0 0 14px rgba(34, 211, 238, 0.45);
+  animation: cv-format-progress-slide 1.35s ease-in-out infinite;
+}
+
+@keyframes cv-format-progress-slide {
+  0% {
+    transform: translateX(-120%);
+  }
+  100% {
+    transform: translateX(320%);
+  }
+}
